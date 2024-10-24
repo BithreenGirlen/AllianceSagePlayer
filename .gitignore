@@ -400,3 +400,4 @@ FodyWeavers.xsd
 /AllianceSagePlayer/deps/SDL2_image-2.8.2
 /AllianceSagePlayer/deps/SDL2_ttf-2.22.0
 /AllianceSagePlayer/deps/spine-cpp-3.8
+/AllianceSagePlayer/deps/out/
