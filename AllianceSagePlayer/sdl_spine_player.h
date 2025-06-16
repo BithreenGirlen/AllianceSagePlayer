@@ -7,12 +7,12 @@ class CSdlSpinePlayer : public CSpinePlayer
 {
 public:
 	CSdlSpinePlayer(SDL_Window* pSdlWindow, SDL_Renderer* pSdlRenderer);
-	~CSdlSpinePlayer();
+	virtual ~CSdlSpinePlayer();
 
-	virtual void Redraw(float fDelta);
+	virtual void Redraw();
 private:
 	virtual void WorkOutDefaultScale();
-	virtual void ResizeWindow();
+	virtual void WorkOutDefaultOffset();
 
 	SDL_Window *m_pSdlWindow = nullptr;
 	SDL_Renderer* m_pSdlRenderer = nullptr;

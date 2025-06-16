@@ -1,4 +1,6 @@
 ﻿
+#include <locale.h>
+
 #include <winsdkver.h>
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN 
@@ -41,29 +43,35 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_ LPWSTR    lpCmdLine,
     _In_ int       nCmdShow)
 {
-	SSdlInit sSdlInit;
-	if (sSdlInit.iInitialised < 0)return 0;
+	::setlocale(LC_ALL, ".utf8");
 
-	std::wstring wstrPickedFile = win_dialogue::SelectOpenFile(L"Text files", L"*_3.txt;*_4.txt;7*.txt", nullptr, nullptr);
+	SSdlInit sdlInit;
+	if (sdlInit.iInitialised < 0)return 0;
+
+	constexpr const wchar_t fileFilters[] = L"*_3.json;*_4.json;7*.json";
+	std::wstring wstrPickedFile = win_dialogue::SelectOpenFile(L"Scenario files", fileFilters, nullptr, nullptr);
 	if (wstrPickedFile.empty())return 0;
 
 	std::vector<std::wstring> scriptFilePaths;
 	size_t nFileIndex = 0;
-	bool bRet = win_filesystem::GetFilePathListAndIndex(wstrPickedFile.c_str(), L"*_3.txt;*_4.txt;7*.txt", scriptFilePaths, &nFileIndex);
+	bool bRet = win_filesystem::GetFilePathListAndIndex(wstrPickedFile.c_str(), fileFilters, scriptFilePaths, &nFileIndex);
 	if (!bRet)return 0;
 
 	/*7068.txt, 7069.txtは健全。*/
 	scriptFilePaths.erase(std::remove_if(scriptFilePaths.begin(), scriptFilePaths.end(),
 		[](const std::wstring& wstr)
 		{
-			return wcsstr(wstr.c_str(), L"memory\\7068.txt") != nullptr || wcsstr(wstr.c_str(), L"memory\\7069.txt") != nullptr;
+			return wcsstr(wstr.c_str(), L"memory\\7068.json") != nullptr || wcsstr(wstr.c_str(), L"memory\\7069.json") != nullptr;
 		}), scriptFilePaths.end());
+
+	CSdlMainWindow mainWindow("SDL spine player", CSdlMainWindow::EBackEnd::kDirectX);
+	mainWindow.SetFont("C:\\Windows\\Fonts\\yumin.ttf", true, true);
 
 	for (;;)
 	{
 		std::vector<adv::TextDatum> textData;
 		std::vector<std::string> strSpineNames;
-		bRet = alliance_sage::LoadScenario(scriptFilePaths.at(nFileIndex), textData, strSpineNames);
+		bRet = alliance_sage::LoadScenario(scriptFilePaths[nFileIndex], textData, strSpineNames);
 		if (!bRet) break;
 
 		std::vector<std::string> atlasPaths;
@@ -71,19 +79,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		for (const auto& strSpineName : strSpineNames)
 		{
-			atlasPaths.emplace_back(strSpineName + ".atlas.txt");
-			skelPaths.emplace_back(strSpineName + ".txt");
+			atlasPaths.emplace_back(strSpineName + ".atlas");
+			skelPaths.emplace_back(strSpineName + ".json");
 		}
 
-		CSdlMainWindow sSdlMainWindow("SDL spine player", CSdlMainWindow::EBackEnd::kVulkan);
-
-		bRet = sSdlMainWindow.SetSpineFromFile(atlasPaths, skelPaths, false);
+		bRet = mainWindow.SetSpineFromFile(atlasPaths, skelPaths, false);
 		if (!bRet)break;
 
-		sSdlMainWindow.SetFont("C:\\Windows\\Fonts\\yumin.ttf", true, true);
-		sSdlMainWindow.SetTexts(textData);
+		mainWindow.SetSlotsToExclude({ "frame" });
 
-		int iRet = sSdlMainWindow.Display();
+		mainWindow.SetTexts(textData);
+
+		int iRet = mainWindow.Display();
 		if (iRet == 1)
 		{
 			++nFileIndex;

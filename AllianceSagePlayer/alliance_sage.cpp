@@ -145,7 +145,7 @@ bool alliance_sage::LoadScenario(const std::wstring& wstrFilePath, std::vector<a
         }
         if (!spineBuffer.empty())
         {
-            strSpineNames.push_back(win_text::NarrowANSI(wstrBaseFolderPath) + spineBuffer);
+            strSpineNames.push_back(win_text::NarrowUtf8(wstrBaseFolderPath) + spineBuffer);
         }
     }
 

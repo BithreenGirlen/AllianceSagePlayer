@@ -1,5 +1,5 @@
-﻿#ifndef SDL_SPINE_CPP_H_
-#define SDL_SPINE_CPP_H_
+﻿#ifndef SDL_SPINE_H_
+#define SDL_SPINE_H_
 
 #include <spine/spine.h>
 #include <SDL2/SDL.h>
@@ -12,33 +12,31 @@ public:
 
 	spine::Skeleton* skeleton = nullptr;
 	spine::AnimationState* animationState = nullptr;
-	float timeScale = 1.f;
+
+	bool isAlphaPremultiplied = true;
+	bool isToForceBlendModeNormal = false;
 
 	void Update(float fDelta);
-	void Draw(SDL_Renderer* pSdlRenderer = nullptr);
+	void Draw(SDL_Renderer* pSdlRenderer, float fOffsetX = 0.f, float fOffsetY = 0.f);
 
-	void SwitchPma() { m_bAlphaPremultiplied ^= true; }
-	void SwitchBlendModeAdoption() { m_bForceBlendModeNormal ^= true; }
 	void SetLeaveOutList(spine::Vector<spine::String>& list);
+	void SetLeaveOutCallback(bool (*pFunc)(const char*, size_t)) { m_pLeaveOutCallback = pFunc; }
+
+	SDL_FRect GetBoundingBox() const;
 private:
-	bool m_bHasOwnAnimationStateData = false;
-	bool m_bAlphaPremultiplied = true;
-	bool m_bForceBlendModeNormal = false;
+	bool m_hasOwnAnimationStateData = false;
+
+	spine::SkeletonClipping m_clipper;
 
 	spine::Vector<SDL_Vertex> m_sdlVertices;
 	spine::Vector<int> m_sdlIndices;
-
-	spine::SkeletonClipping m_clipper;
 	spine::Vector<float> m_worldVertices;
 	spine::Vector<unsigned short> m_quadIndices;
 
 	spine::Vector<spine::String> m_leaveOutList;
 
 	bool IsToBeLeftOut(const spine::String& slotName);
-
-	SDL_BlendMode m_SdlBlendModeScreen = SDL_BlendMode::SDL_BLENDMODE_NONE;
-	SDL_BlendMode m_SdlBlendModeNormalPma = SDL_BlendMode::SDL_BLENDMODE_NONE;
-	SDL_BlendMode m_SdlBlendModeAdditivePma = SDL_BlendMode::SDL_BLENDMODE_NONE;
+	bool (*m_pLeaveOutCallback)(const char*, size_t) = nullptr;
 };
 
 class CSdlTextureLoader : public spine::TextureLoader
@@ -56,4 +54,4 @@ private:
 	spine::String m_SdlErrorMassage;
 };
 
-#endif //!SDL_SPINE_CPP_H_
+#endif //!SDL_SPINE_H_

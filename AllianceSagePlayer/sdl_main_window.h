@@ -25,7 +25,11 @@ public:
 	CSdlMainWindow(const char* pzWindowName, EBackEnd eBackEnd = EBackEnd::kDirectX);
 	~CSdlMainWindow();
 
-	bool SetSpineFromFile(const std::vector<std::string>& atlasPaths, const std::vector<std::string>& skelPaths, bool bIsBinary);
+	bool SetSpineFromFile(const std::vector<std::string>& atlasPaths, const std::vector<std::string>& skelPaths, bool isBinarySkel);
+	
+	void SetSlotsToExclude(const std::vector<std::string>& slotNames);
+	void SetSlotExclusionCallback(bool (*pFunc)(const char*, size_t));
+	
 	bool SetFont(const char* szFontFilePath, bool bBold = false, bool bItalic = false);
 	void SetTexts(const std::vector<adv::TextDatum>& textData);
 
@@ -38,8 +42,8 @@ private:
 
 	std::shared_ptr<TTF_Font> m_fillFont;
 	std::shared_ptr<TTF_Font> m_outlineFont;
-	bool bTextColourReversed = false;
-	bool bTextHidden = false;
+	bool m_bTextColourReversed = false;
+	bool m_bTextHidden = false;
 
 	std::vector<adv::TextDatum> m_textData;
 	size_t m_nTextIndex = 0;
@@ -47,14 +51,21 @@ private:
 	std::unique_ptr<CSdlSpinePlayer> m_sdlSpinePlayer;
 	CSdlClock m_spineClock;
 
-	CMfMediaPlayer m_mfBgPlayer;
-	CMfMediaPlayer m_mfVoicePlayer;
+	void ResizeWindow();
+
+	bool SaveCurrentFrameImage();
+
+	void ResetSpinePlayerScale();
+
+	std::unique_ptr<CMfMediaPlayer> m_pBgPlayer;
+	CMfMediaPlayer m_voicePlayer;
 	CSdlClock m_voiceClock;
 
 	void ShiftMessageText(bool bForward);
 	std::wstring FormatMessageText();
 
-	void SwitchTextColour();
+	void ToggleTextColour();
+	void ToggleTextVisibility();
 
 	void RenderText(const std::wstring& wstr, int iPosX = 0, int iPosY = 0);
 
