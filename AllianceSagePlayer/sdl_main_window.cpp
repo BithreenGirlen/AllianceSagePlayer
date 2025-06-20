@@ -102,10 +102,13 @@ bool CSdlMainWindow::SetFont(const char* szFontFilePath, bool bBold, bool bItali
 	return true;
 }
 
-void CSdlMainWindow::SetTexts(const std::vector<adv::TextDatum>& textData)
+void CSdlMainWindow::SetScenarioData(std::vector<adv::TextDatum>& textData, std::vector<std::string>& animationNames)
 {
-	m_textData = textData;
+	m_textData = std::move(textData);
 	m_nTextIndex = 0;
+
+	m_animationNames = std::move(animationNames);
+	m_nLastAnimationIndex = 0;
 }
 
 int CSdlMainWindow::Display()
@@ -125,7 +128,7 @@ int CSdlMainWindow::Display()
 	SDL_Point iMouseStartPos{};
 
 	m_spineClock.Restart();
-	m_voiceClock.Restart();
+	m_textClock.Restart();
 	while (!bToBeQuit)
 	{
 		SDL_Event event;
@@ -135,6 +138,22 @@ int CSdlMainWindow::Display()
 			{
 			case SDL_QUIT:
 				bToBeQuit = true;
+				break;
+			case SDL_KEYDOWN:
+				switch (event.key.keysym.scancode)
+				{
+				case SDL_SCANCODE_LEFT:
+					ShiftMessageText(false);
+					break;
+				case SDL_SCANCODE_RIGHT:
+					if (m_nTextIndex < m_textData.size() - 1)
+					{
+						ShiftMessageText(true);
+					}
+					break;
+				default:
+					break;
+				}
 				break;
 			case SDL_KEYUP:
 				switch (event.key.keysym.scancode)
@@ -209,7 +228,7 @@ int CSdlMainWindow::Display()
 
 						if (m_sdlSpinePlayer.get() != nullptr)
 						{
-							if (iX == 0 && iY == 0)
+							if (iX == 0 && iY == 0 && m_animationNames.empty())
 							{
 								m_sdlSpinePlayer->ShiftAnimation();
 							}
@@ -265,10 +284,10 @@ int CSdlMainWindow::Display()
 
 						int nKeyCount = 0;
 						const Uint8* pKeyboardState = ::SDL_GetKeyboardState(&nKeyCount);
-						if (nKeyCount > SDL_SCANCODE_LCTRL && pKeyboardState[SDL_SCANCODE_LCTRL] == 0)
+						if (1 || nKeyCount > SDL_SCANCODE_LCTRL && pKeyboardState[SDL_SCANCODE_LCTRL] == 0)
 						{
 							m_sdlSpinePlayer->RescaleCanvas(event.wheel.y < 0);
-							ResizeWindow();
+							//ResizeWindow();
 						}
 					}
 				}
@@ -395,12 +414,13 @@ void CSdlMainWindow::ResetSpinePlayerScale()
 	{
 		m_sdlSpinePlayer->ResetScale();
 		ResizeWindow();
-		//m_sdlSpinePlayer->SetZoom(1.215f);
 	}
 }
 /*表示文章移行*/
 void CSdlMainWindow::ShiftMessageText(bool bForward)
 {
+	if (m_textData.empty())return;
+
 	if (bForward)
 	{
 		++m_nTextIndex;
@@ -411,27 +431,45 @@ void CSdlMainWindow::ShiftMessageText(bool bForward)
 		--m_nTextIndex;
 		if (m_nTextIndex >= m_textData.size())m_nTextIndex = m_textData.size() - 1;
 	}
+	UpdateMessageText();
+}
 
-	std::wstring wstr = m_textData.at(m_nTextIndex).wstrVoicePath;
-	if (!wstr.empty())
+void CSdlMainWindow::UpdateMessageText()
+{
+	if (m_nTextIndex >= m_textData.size())return;
+
+	const adv::TextDatum& textDatum = m_textData[m_nTextIndex];
+
+	/* Checks if animation has to be switched or not. */
+	if (m_nTextIndex == 0 || (m_nLastAnimationIndex != textDatum.nAnimationIndex))
 	{
-		if (wstr.find(L"_loop") != std::wstring::npos)
+		if (textDatum.nAnimationIndex < m_animationNames.size())
 		{
-			m_pBgPlayer->Play(wstr.c_str());
+			m_nLastAnimationIndex = textDatum.nAnimationIndex;
+			m_sdlSpinePlayer->SetAnimationByName(m_animationNames[m_nLastAnimationIndex].c_str());
+		}
+	}
+
+	const std::wstring& wstrVoicePath = textDatum.wstrVoicePath;
+	if (!wstrVoicePath.empty())
+	{
+		if (wstrVoicePath.find(L"_loop") != std::wstring::npos)
+		{
+			m_pBgPlayer->Play(wstrVoicePath.c_str());
 		}
 		else
 		{
-			m_voicePlayer.Play(wstr.c_str());
+			m_voicePlayer.Play(wstrVoicePath.c_str());
 		}
 	}
-	m_voiceClock.Restart();
+	m_textClock.Restart();
 }
 /*表示文章作成*/
 std::wstring CSdlMainWindow::FormatMessageText()
 {
-	if (m_textData.empty() || m_nTextIndex > m_textData.size() - 1)return std::wstring();
+	if (m_nTextIndex >= m_textData.size())return std::wstring();
 
-	const adv::TextDatum& textDatum = m_textData.at(m_nTextIndex);
+	const adv::TextDatum& textDatum = m_textData[m_nTextIndex];
 	std::wstring wstr = textDatum.wstrText;
 	if (!wstr.empty() && wstr.back() != '\n')wstr += '\n';
 	wstr += std::to_wstring(m_nTextIndex + 1) + L"/" + std::to_wstring(m_textData.size());
@@ -510,7 +548,7 @@ void CSdlMainWindow::RenderText(const std::wstring& wstr, int iPosX, int iPosY)
 void CSdlMainWindow::CheckTimer()
 {
 	constexpr float fAutoPlayInterval = 3.f;
-	float fSecond = m_voiceClock.GetElapsedTime();
+	float fSecond = m_textClock.GetElapsedTime();
 	if (m_voicePlayer.IsEnded() && fSecond > fAutoPlayInterval)
 	{
 		if (m_nTextIndex < m_textData.size() - 1)

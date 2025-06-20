@@ -31,7 +31,7 @@ public:
 	void SetSlotExclusionCallback(bool (*pFunc)(const char*, size_t));
 	
 	bool SetFont(const char* szFontFilePath, bool bBold = false, bool bItalic = false);
-	void SetTexts(const std::vector<adv::TextDatum>& textData);
+	void SetScenarioData(std::vector<adv::TextDatum>& textData, std::vector<std::string>& animationNames);
 
 	int Display();
 private:
@@ -39,14 +39,6 @@ private:
 
 	std::shared_ptr<SDL_Window> m_window;
 	std::shared_ptr<SDL_Renderer> m_renderer;
-
-	std::shared_ptr<TTF_Font> m_fillFont;
-	std::shared_ptr<TTF_Font> m_outlineFont;
-	bool m_bTextColourReversed = false;
-	bool m_bTextHidden = false;
-
-	std::vector<adv::TextDatum> m_textData;
-	size_t m_nTextIndex = 0;
 
 	std::unique_ptr<CSdlSpinePlayer> m_sdlSpinePlayer;
 	CSdlClock m_spineClock;
@@ -57,11 +49,23 @@ private:
 
 	void ResetSpinePlayerScale();
 
+	std::shared_ptr<TTF_Font> m_fillFont;
+	std::shared_ptr<TTF_Font> m_outlineFont;
+	bool m_bTextColourReversed = false;
+	bool m_bTextHidden = false;
+
+	std::vector<adv::TextDatum> m_textData;
+	size_t m_nTextIndex = 0;
+
+	std::vector<std::string> m_animationNames;
+	size_t m_nLastAnimationIndex = 0;
+
 	std::unique_ptr<CMfMediaPlayer> m_pBgPlayer;
 	CMfMediaPlayer m_voicePlayer;
-	CSdlClock m_voiceClock;
+	CSdlClock m_textClock;
 
 	void ShiftMessageText(bool bForward);
+	void UpdateMessageText();
 	std::wstring FormatMessageText();
 
 	void ToggleTextColour();

@@ -8,7 +8,11 @@
 
 namespace alliance_sage
 {
-	bool LoadScenario(const std::wstring& wstrFilePath, std::vector<adv::TextDatum>& textData, std::vector<std::string> &strSpineNames);
+	bool LoadScenario(
+		const std::wstring& wstrFilePath,
+		std::vector<adv::TextDatum>& textData,
+		std::vector<std::string>& spineFilePaths,
+		std::vector<std::string>& animationNames);
 }
 #endif // !ALLIANCE_SAGE_H_
 

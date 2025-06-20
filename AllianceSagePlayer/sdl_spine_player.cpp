@@ -17,25 +17,25 @@ CSdlSpinePlayer::~CSdlSpinePlayer()
 /*再描画*/
 void CSdlSpinePlayer::Redraw()
 {
-	/* Acrually, this should be done inside the overridden CSpinePlayer::Update(). */
+	float fX = 0.f;
+	float fY = 0.f;
+	//if (m_pSdlWindow != nullptr && m_pSdlRenderer != nullptr)
+	//{
+	//	int iWindowWidth = 0;
+	//	int iWindowHeight = 0;
+	//	::SDL_GetWindowSize(m_pSdlWindow, &iWindowWidth, &iWindowHeight);
+
+	//	fX = (m_fBaseSize.x - iWindowWidth / m_fSkeletonScale) / 2.f;
+	//	fY = (m_fBaseSize.y - iWindowHeight / m_fSkeletonScale) / 2.f;
+
+	//	::SDL_RenderSetScale(m_pSdlRenderer, m_fSkeletonScale, m_fSkeletonScale);
+	//}
+
+	/* For usual case, use SDL's scale. */
 	for (const auto& drawble : m_drawables)
 	{
 		drawble->skeleton->setScaleX(m_fSkeletonScale);
 		drawble->skeleton->setScaleY(m_fSkeletonScale);
-	}
-
-	float fX = 0.f;
-	float fY = 0.f;
-	if (m_pSdlWindow != nullptr && m_pSdlRenderer != nullptr)
-	{
-		int iWindowWidth = 0;
-		int iWindowHeight = 0;
-		::SDL_GetWindowSize(m_pSdlWindow, &iWindowWidth, &iWindowHeight);
-
-		fX = (m_fBaseSize.x - iWindowWidth / m_fSkeletonScale) / 2.f;
-		fY = (m_fBaseSize.y - iWindowHeight / m_fSkeletonScale) / 2.f;
-
-		//::SDL_RenderSetScale(m_pSdlRenderer, m_fSkeletonScale, m_fSkeletonScale);
 	}
 
 	if (!m_bDrawOrderReversed)
@@ -70,9 +70,8 @@ void CSdlSpinePlayer::Redraw()
 void CSdlSpinePlayer::WorkOutDefaultScale()
 {
 	/*
-	* The following calculation is too game-specific measure. 
-	* When used as runtime for other games, use commented-out codes
-	* instead of Spine's built-in scaler and the calculation below.
+	* The following calculation is game-specific measure to adapt to its too long height. 
+	* When used as runtime for other games, use commented-out code instead of the calculation below.
 	*/
 	m_fDefaultScale = 1.f;
 	m_fDefaultOffset = {};
@@ -80,10 +79,10 @@ void CSdlSpinePlayer::WorkOutDefaultScale()
 	int iSkeletonWidth = static_cast<int>(m_fBaseSize.x);
 	int iSkeletonHeight = static_cast<int>(m_fBaseSize.y);
 
-	SDL_DisplayMode sdlDisPlayMode{};
-	::SDL_GetCurrentDisplayMode(0, &sdlDisPlayMode);
-	int iDesktopWidth = sdlDisPlayMode.w;
-	int iDesktopHeight = sdlDisPlayMode.h;
+	SDL_DisplayMode displayMode{};
+	::SDL_GetCurrentDisplayMode(0, &displayMode);
+	int iDesktopWidth = displayMode.w;
+	int iDesktopHeight = displayMode.h;
 
 	if (iSkeletonWidth > iDesktopWidth || iSkeletonHeight > iDesktopHeight)
 	{
@@ -102,16 +101,6 @@ void CSdlSpinePlayer::WorkOutDefaultScale()
 		m_fDefaultOffset.x = iSkeletonWidth > iDesktopWidth ? (iSkeletonWidth - iDesktopWidth) * fOffsetScale : 0.f;
 		m_fDefaultOffset.y = iSkeletonHeight > iDesktopHeight ? (iSkeletonHeight - iDesktopHeight) * fOffsetScale : 0.f;
 	}
-
-	//m_fDefaultScale = 1.f;
-
-	//int iSkeletonWidth = static_cast<int>(m_fBaseSize.x);
-	//int iSkeletonHeight = static_cast<int>(m_fBaseSize.y);
-
-	//SDL_DisplayMode sdlDisPlayMode{};
-	//::SDL_GetCurrentDisplayMode(0, &sdlDisPlayMode);
-	//int iDesktopWidth = sdlDisPlayMode.w;
-	//int iDesktopHeight = sdlDisPlayMode.h;
 
 	//if (iSkeletonWidth > iDesktopWidth || iSkeletonHeight > iDesktopHeight)
 	//{

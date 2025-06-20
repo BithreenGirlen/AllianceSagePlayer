@@ -70,25 +70,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	for (;;)
 	{
 		std::vector<adv::TextDatum> textData;
-		std::vector<std::string> strSpineNames;
-		bRet = alliance_sage::LoadScenario(scriptFilePaths[nFileIndex], textData, strSpineNames);
+		std::vector<std::string> spineFilePaths;
+		std::vector<std::string> animationNames;
+		bRet = alliance_sage::LoadScenario(scriptFilePaths[nFileIndex], textData, spineFilePaths, animationNames);
 		if (!bRet) break;
 
 		std::vector<std::string> atlasPaths;
 		std::vector<std::string> skelPaths;
 
-		for (const auto& strSpineName : strSpineNames)
+		for (const auto& spineFilePath : spineFilePaths)
 		{
-			atlasPaths.emplace_back(strSpineName + ".atlas");
-			skelPaths.emplace_back(strSpineName + ".json");
+			atlasPaths.emplace_back(spineFilePath + ".atlas");
+			skelPaths.emplace_back(spineFilePath + ".json");
 		}
 
 		bRet = mainWindow.SetSpineFromFile(atlasPaths, skelPaths, false);
 		if (!bRet)break;
 
 		mainWindow.SetSlotsToExclude({ "frame" });
-
-		mainWindow.SetTexts(textData);
+		mainWindow.SetScenarioData(textData, animationNames);
 
 		int iRet = mainWindow.Display();
 		if (iRet == 1)
