@@ -2,70 +2,81 @@
 某寝室用。
 
 ## How to play
-1. Run the programme. A file-select-dialogue will be shown.
-2. Select a script file named as `*_3.txt`, `*_4.txt`, or `7*.txt`.
- <pre>
-event_ja
-  ├ kizuna
-  │  ├ ...
-  │  ├ 1158_3.txt
-  │  ├ 1158_4.txt
-  │  └ ...
-  ├ memory
-  │  ├ ...
-  │  ├ 7094.txt
-  │  └ ...
-  └ ...
- </pre>
 
- Then, voice files and spine files are loaded according to the specification of the selected script file.
- <pre>
+First, prepare the files, commented below, with proper directory.
+
+<pre>
 bundles
-  ├ ...
-  ├ cv
-  │  ├ cv_XXXX // voice folder specified in the script file
-  │  └ ...
-  ├ ...
-  ├ event_ja
-  │  ├ ...
-  │  ├ kizuna
-  │  ├ ...
-  │  ├ memory
-  │  └ ...
-  ├ XXXXXX // spine folder specified in the script file.
-  ├ XXXXXX01
-  └ ...
- </pre>
+├ ...
+├ cv // voice folder
+│  ├ ...
+│  ├ cv_1158
+│  │  ├ HCG_loop1.m4a
+│  │  └ ...
+│  └ ...
+├ ...
+├ event_ja // script folder
+│  ├ ...
+│  ├ kizuna
+│  │  ├ ...
+│  │  ├ 1158_3.json // Select file like this.
+│  │  ├ 1158_4.json
+│  │  └ ...
+│  ├ memory
+│  │  ├ ...
+│  │  ├ 7094.json
+│  │  └ ...
+│  └ ...
+├ hscene // Scene Spine folder
+├ ...
+├ hscene15
+│  ├ ...
+│  ├ 1158_cg1.atlas
+│  ├ 1158_cg1.json
+│  ├ 1158_cg1.png
+│  └ ...
+└ ...
+</pre>
+
+Then, select a script file named as `*_3.json`, `*_4.json`, or `7*.json` from the application.  
+The scene will be set up based on the specification of the selected script file.
 
 ## Mouse function
-| Input  | Function  |
+| Input | Function |
 | --- | --- |
-| Mouse wheel | Scale up/down |
+| Mouse wheel | Scale up/down the skeleton. |
 | Left button + mouse wheel | Speed up/down the animation. |
-| Left button click | Switch to the next animation. |
 | Left button drag | Move view point |
-| Middle button | Reset scaling, animation speed, and view point. |
-| Right button + mouse wheel | Show the next/previous text. |
-| Right button + left button | Move Window |
+| Middle button | Reset scale, animation speed, and view point. |
+| Right button + mouse wheel | Fast-forward/rewind the text. |
 
 ## Keyboard function
 | Input  | Function  |
 | --- | --- |
-| A | Enable/disable premultiplied alpha. |
-| B | Prefer/ignore blend-mode specified by slots. |
-| C | Switch text colour between black and white. |
-| T | Show/hide text. |
-| Esc | Close the application. |
-| Up | Open the next script. |
-| Down | Open the previous script. |
+| <kbd>Esc</kbd> | Close the application. |
+| <kbd>A</kbd> | Enable/disable premultiplied alpha. |
+| <kbd>B</kbd> | Prefer/ignore blend-mode specified by slots. |
+| <kbd>C</kbd> | Toggle text colour between black and white. |
+| <kbd>T</kbd> | Show/hide text. |
+| <kbd>↑</kbd> | Open the previous script. |
+| <kbd>↓</kbd> | Open the next script. |
+| <kbd>→</kbd> | Fast-forward the text. |
+| <kbd>←</kbd> | Rewind the text. |
 
-## Build dependency
+## External libraries
 - [SDL2-2.30.3](https://github.com/libsdl-org/SDL/releases/tag/release-2.30.3)
 - [SDL2_image-2.8.2](https://github.com/libsdl-org/SDL_image/releases/tag/release-2.8.2)
 - [SDL2_ttf-2.22.0](https://github.com/libsdl-org/SDL_ttf/releases/tag/release-2.22.0)
 - [spine-cpp-3.8](https://github.com/EsotericSoftware/spine-runtimes/tree/3.8)
 
-When building, supply the above libraries under project folder `/AllianceSagePlayer/deps`.
+## Build
+
+1. Run `AllianceSagePlayer/deps/CMakeLists.txt` to obtain and modify external libraries.
+2. Open `AllianceSagePlayer.sln` with Visual Studio.
+3. Select `Build Solution` on menu item.
+
+<details><summary>deps directory will be as follows</summary>
+
 <pre>
 AllianceSagePlayer
   ├ deps
@@ -91,7 +102,7 @@ AllianceSagePlayer
   │  │  └ lib
   │  │     └ x64
   │  │       └ SDL2.lib
-  │  └ spine-cpp-3.8 // sources and headers of spine-cpp 3.8
+  │  └ spine-cpp-3.8 // C++ Spine runtime for version 3.8.xx
   │     ├ include
   │     │  └ ...
   │     └ src
@@ -100,3 +111,5 @@ AllianceSagePlayer
   ├ AllianceSagePlayer.vcxproj
   └ ...
 </pre>
+
+</details>
