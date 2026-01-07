@@ -1,5 +1,4 @@
 ﻿
-#include <memory>
 
 #include "alliance_sage.h"
 #include "win_filesystem.h"
@@ -22,29 +21,33 @@ namespace alliance_sage
 		return wstrFilePath.substr(0, nPos);
 	}
 
-	static void ReplaceAll(std::string& src, const std::string& strOld, const std::string& strNew)
+	template <typename CharType>
+	void ReplaceAll(std::basic_string<CharType>& src, const std::basic_string<CharType>& strOld, const std::basic_string<CharType>& strNew)
 	{
-		if (strOld == strNew)return;
+		if (strOld.empty() || strOld == strNew) return;
 
-		for (size_t nRead = 0;;)
+		for (size_t nPos = 0;;)
 		{
-			size_t nPos = src.find(strOld, nRead);
-			if (nPos == std::string::npos)break;
+			nPos = src.find(strOld, nPos);
+			if (nPos == std::basic_string<CharType>::npos)break;
 			src.replace(nPos, strOld.size(), strNew);
-			nRead = nPos + strNew.size();
+			nPos += strNew.size();
 		}
 	}
-
-	static void ReplaceAll(std::wstring& src, const std::wstring& strOld, const std::wstring& strNew)
+	template <typename CharType, size_t sizeOld, size_t sizeNew>
+	void ReplaceAll(std::basic_string<CharType>& src, const CharType(&strOld)[sizeOld], const CharType(&strNew)[sizeNew])
 	{
-		if (strOld == strNew)return;
+		const size_t lenOld = sizeOld - 1;
+		const size_t lenNew = sizeNew - 1;
 
-		for (size_t nRead = 0;;)
+		if (lenOld == 0) return;
+
+		for (size_t nPos = 0;;)
 		{
-			size_t nPos = src.find(strOld, nRead);
-			if (nPos == std::wstring::npos)break;
-			src.replace(nPos, strOld.size(), strNew);
-			nRead = nPos + strNew.size();
+			nPos = src.find(strOld, nPos, lenOld);
+			if (nPos == std::basic_string<CharType>::npos)break;
+			src.replace(nPos, lenOld, strNew, lenNew);
+			nPos += lenNew;
 		}
 	}
 }
@@ -54,46 +57,38 @@ bool alliance_sage::LoadScenario(const std::wstring& wstrFilePath, std::vector<a
 	std::wstring wstrBaseFolderPath = DeriveBasePathFromScriptFilePath(wstrFilePath);
 	if (wstrBaseFolderPath.empty())return false;
 
-	std::string strFile = win_filesystem::LoadFileAsString(wstrFilePath.c_str());
-	ReplaceAll(strFile, "\t", "");
-	ReplaceAll(strFile, "\r", "");
-	ReplaceAll(strFile, "\n", "");
-
-	char* p = &strFile[0];
+	const std::string strFile = win_filesystem::LoadFileAsString(wstrFilePath.c_str());
+	const char* p = &strFile[0];
+	const char* pStart = nullptr, * pEnd = nullptr;
 
 	std::vector<std::string> jsonObjects;
 	for (;;)
 	{
-		auto pp = std::make_unique<char*>();
-		bool bRet = json_minimal::ExtractJsonObject(&p, nullptr, &*pp);
+		bool bRet = json_minimal::FindNextObject(&p, nullptr, &pStart, &pEnd);
 		if (!bRet)break;
-		jsonObjects.push_back(*pp);
+		jsonObjects.emplace_back(pStart, pEnd);
 	}
 
-	std::vector<std::vector<SScriptCommand>> scriptCommandSets;
+	std::vector<std::vector<SScriptCommand>> scriptCommandsList;
+	for (const auto& jsonObject : jsonObjects)
 	{
-		std::vector<char> nameBuffer(512);
-		std::vector<char> valueBuffer(512);
-
-		for (auto& jsonObject : jsonObjects)
+		p = &jsonObject[0];
+		std::vector<SScriptCommand> scriptCommands;
+		for (;;)
 		{
-			std::vector<SScriptCommand> scriptCommandSetBuffer;
-			p = &jsonObject[0];
-			for (;;)
-			{
-				bool bRet = json_minimal::ReadNextKey(&p, nameBuffer.data(), nameBuffer.size(), valueBuffer.data(), valueBuffer.size());
-				if (!bRet)break;
-				SScriptCommand s;
-				s.strName = nameBuffer.data();
-				s.strValue = valueBuffer.data();
+			const char* pKeyStart = nullptr, * pKeyEnd = nullptr;
+			const char* pValueStart = nullptr, * pValueEnd = nullptr;
+			bool bRet = json_minimal::util::ReadNextKeyInObject(&p, &pKeyStart, &pKeyEnd, &pValueStart, &pValueEnd);
+			if (!bRet)break;
 
-				scriptCommandSetBuffer.emplace_back(std::move(s));
-			}
-			scriptCommandSets.push_back(std::move(scriptCommandSetBuffer));
+			scriptCommands.emplace_back(SScriptCommand{ std::string(pKeyStart, pKeyEnd), std::string(pValueStart, pValueEnd) });
 		}
+
+		scriptCommandsList.push_back(std::move(scriptCommands));
 	}
 
-	for (const auto& scriptCommandSet : scriptCommandSets)
+
+	for (const auto& scriptCommands : scriptCommandsList)
 	{
 		std::string nameBuffer;
 		std::string msgBuffer;
@@ -101,7 +96,7 @@ bool alliance_sage::LoadScenario(const std::wstring& wstrFilePath, std::vector<a
 
 		std::string commandBuffer;
 
-		for (const auto& scriptCommand : scriptCommandSet)
+		for (const auto& scriptCommand : scriptCommands)
 		{
 			if (scriptCommand.strName == "name")
 			{
@@ -123,7 +118,7 @@ bool alliance_sage::LoadScenario(const std::wstring& wstrFilePath, std::vector<a
 			{
 				if (commandBuffer == "spine on")
 				{
-					spineFilePaths.push_back(win_text::NarrowUtf8(wstrBaseFolderPath) + scriptCommand.strValue);
+					spineFilePaths.emplace_back(win_text::NarrowUtf8(wstrBaseFolderPath).append(scriptCommand.strValue));
 				}
 				else if (commandBuffer == "spine animation")
 				{
@@ -138,16 +133,16 @@ bool alliance_sage::LoadScenario(const std::wstring& wstrFilePath, std::vector<a
 			if (!nameBuffer.empty())
 			{
 				t.wstrText = win_text::WidenUtf8(nameBuffer);
-				t.wstrText += L": ";
+				t.wstrText += L": \n";
 			}
 
-			t.wstrText = win_text::WidenUtf8(msgBuffer);
+			t.wstrText += win_text::WidenUtf8(msgBuffer);
 			ReplaceAll(t.wstrText, L"<name>", L"俺");
 			ReplaceAll(t.wstrText, L"\\r", L"");
 			ReplaceAll(t.wstrText, L"\\n", L"\n");
 			if (!cvBuffer.empty())
 			{
-				t.wstrVoicePath = wstrBaseFolderPath + L"cv\\" + win_text::WidenUtf8(cvBuffer) + L".m4a";
+				t.wstrVoicePath = std::wstring(wstrBaseFolderPath).append(L"cv\\").append(win_text::WidenUtf8(cvBuffer)).append(L".m4a");
 			}
 
 			t.nAnimationIndex = animationNames.empty() ? 0 : animationNames.size() - 1;

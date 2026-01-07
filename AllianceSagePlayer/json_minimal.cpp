@@ -1,367 +1,326 @@
-/*Minimal JSON extractor.*/
+Ôªø/* Minimal JSON extractor */
 
 #include <string.h>
-#include <malloc.h>
 
 #include "json_minimal.h"
 
-
-/*JSONèWçáóvëfèIí[íTçı*/
-static bool FindCollectionEnd(char* src, char** dst, int* pForeCount, bool bObject)
-{
-	if (src == nullptr || dst == nullptr)return false;
-	int iCount = pForeCount == nullptr ? 0 : *pForeCount;
-
-	const char cStart = bObject ? '{' : '[';
-	const char cEnd = bObject ? '}' : ']';
-
-	char* p = src;
-	char* pEnd = nullptr;
-	char* pStart = nullptr;
-
-	for (;;)
-	{
-		pEnd = strchr(p, cEnd);
-		if (pEnd == nullptr)return false;
-
-		pStart = strchr(p, cStart);
-		if (pStart == nullptr)break;
-
-		if (pEnd < pStart)
-		{
-			--iCount;
-			p = pEnd + 1;
-		}
-		else
-		{
-			++iCount;
-			p = pStart + 1;
-		}
-
-		if (iCount == 0)break;
-	}
-
-	for (; iCount > 0; ++pEnd)
-	{
-		if (*pEnd == cEnd)
-		{
-			--iCount;
-		}
-	}
-
-	*dst = ++pEnd;
-
-	return true;
-}
-
-/*JSONïœêîñºäJénà íuíTçı*/
-static char* FindJsonNameStart(char* src)
-{
-	const char ref[] = " :{[,";
-	for (char* p = src; p != nullptr; ++p)
-	{
-		bool b = false;
-		/*èIí[èúäO*/
-		for (size_t i = 0; i < sizeof(ref) - 1; ++i)
-		{
-			if (*p == ref[i])
-			{
-				b = true;
-			}
-		}
-		if (!b)return p;
-	}
-
-	return nullptr;
-}
-/*JSONíläJénà íuíTçı*/
-static char* FindJsonValueStart(char* src)
-{
-	const char ref[] = "\"{[0123456789-";
-	return strpbrk(src, ref);
-}
-/*JSONãÊêÿÇËà íuíTçı*/
-static char* FindJsonValueEnd(char* src)
-{
-	const char ref[] = ",}\"]";
-	return strpbrk(src, ref);
-}
-
-
 namespace json_minimal
 {
-/*JSONì¡ê´ëÃÇÃíäèo*/
-bool ExtractJsonObject(char** src, const char* name, char** dst)
-{
-	char* p = nullptr;
-	char* pp = *src;
-	char* q = nullptr;
-	char* qq = nullptr;
-	size_t nLen = 0;
-	int iCount = 0;
-
-	if (name != nullptr)
+	static const char* SkipWhiteSpace(const char* src)
 	{
-		p = strstr(pp, name);
-		if (p == nullptr)return false;
+		const char* p = src;
 
-		pp = strchr(p, ':');
-		if (pp == nullptr)return false;
-	}
-	else
-	{
-		p = strchr(pp, '{');
-		if (p == nullptr)return false;
-		++iCount;
-		pp = p + 1;
+		static const char ref[] = " \t\r\n";
+		return p + strspn(p, ref);
 	}
 
-	bool bRet = FindCollectionEnd(pp, &q, &iCount, true);
-	if (!bRet)return false;
-
-	nLen = q - p;
-	char* pBuffer = static_cast<char*>(malloc(nLen + 1));
-	if (pBuffer == nullptr)return false;
-
-	memcpy(pBuffer, p, nLen);
-	*(pBuffer + nLen) = '\0';
-	*dst = pBuffer;
-	*src = q;
-
-	return true;
-}
-/*JSONîzóÒÇÃíäèo*/
-bool ExtractJsonArray(char** src, const char* name, char** dst)
-{
-	char* p = nullptr;
-	char* pp = *src;
-	char* q = nullptr;
-	char* qq = nullptr;
-	size_t nLen = 0;
-	int iCount = 0;
-
-	if (name != nullptr)
+	static const char* SkipString(const char* src)
 	{
-		p = strstr(pp, name);
-		if (p == nullptr)return false;
+		const char* p = src;
 
-		pp = strchr(p, ':');
-		if (pp == nullptr)return false;
-	}
-	else
-	{
-		p = strchr(pp, '[');
-		if (p == nullptr)return false;
-		++iCount;
-		pp = p + 1;
-	}
-
-	bool bRet = FindCollectionEnd(pp, &q, &iCount, false);
-	if (!bRet)return false;
-
-	nLen = q - p;
-	char* pBuffer = static_cast<char*>(malloc(nLen + 1));
-	if (pBuffer == nullptr)return false;
-
-	memcpy(pBuffer, p, nLen);
-	*(pBuffer + nLen) = '\0';
-	*dst = pBuffer;
-	*src = q;
-
-	return true;
-}
-/*JSONóvëfÇÃílÇéÊìæ*/
-bool GetJsonElementValue(char* src, const char* name, char* dst, size_t nDstSize, int* iDepth, char** pEnd)
-{
-	char* p = nullptr;
-	char* pp = src;
-	size_t nLen = 0;
-
-	p = strstr(pp, name);
-	if (p == nullptr)return false;
-
-	pp = strchr(p, ':');
-	if (pp == nullptr)return false;
-	++pp;
-
-	p = FindJsonValueStart(pp);
-	if (p == nullptr)return false;
-	if (*p == '[' || *p == '{') /* èWçáóvëf */
-	{
-		int iCount = 0;
-		bool bRet = FindCollectionEnd(pp, &p, &iCount, *p == '{');
-		if (!bRet)return false;
-	}
-	else /* íPóvëf */
-	{
-		p = FindJsonValueEnd(pp);
-		if (p == nullptr)return false;
-		if (*p == '"')
+		for (; *p != '\0';)
 		{
-			pp = p + 1;
-			p = strchr(pp, '"');
-			if (p == nullptr)return false;
+			++p;
+			switch (*p)
+			{
+			case '"':
+				return p + 1;
+			case '\\':
+				++p;
+				break;
+			default:
+				break;
+			}
+		}
+
+		return p;
+	}
+
+	static const char* SkipPrimitive(const char* src)
+	{
+		static const char ref[] = " \t\r\n,]}";
+		return strpbrk(src, ref);
+	}
+
+	static const char* SkipCollection(const char* src)
+	{
+		const char* p = src;
+
+		if (*p != '{' && *p != '[') return p;
+		const char cStart = *p;
+		const char cEnd = cStart == '{' ? '}' : ']';
+
+		int depth = 1;
+		++p;
+
+		while (*p != '\0')
+		{
+			if (*p == '"')
+			{
+				p = SkipString(p);
+				continue;
+			}
+
+			if (*p == cStart)
+			{
+				++depth;
+			}
+			else if (*p == cEnd)
+			{
+				--depth;
+				if (depth == 0)	return p + 1;
+			}
+
+			++p;
+		}
+
+		return nullptr;
+	}
+
+	static const char* SkipValue(const char* src)
+	{
+		const char* p = SkipWhiteSpace(src);
+		if (*p == '"') return SkipString(p);
+		else if (*p == '{' || *p == '[') return SkipCollection(p);
+
+		return SkipPrimitive(p);
+	}
+
+	static const char* FindValueStart(const char* src, const char* name, const char cStart)
+	{
+		if (name != nullptr)
+		{
+			const char* p1 = strstr(src, name);
+			if (p1 == nullptr) return nullptr;
+
+			const char* p2 = strchr(p1, ':');
+			if (p2 == nullptr) return nullptr;
+			++p2;
+
+			p1 = SkipWhiteSpace(p2);
+
+			return p1;
 		}
 		else
 		{
-			for (; *pp == ' '; ++pp);
-			for (char* q = p - 1;; --q)
-			{
-				if (*q != ' ' && *q != '\r' && *q != '\n' && *q != '\t')break;
-				p = q;
-			}
+			return strchr(src, cStart);
 		}
 	}
 
-	nLen = p - pp;
-	if (nLen > nDstSize - 1)return false;
-	memcpy(dst, pp, nLen);
-	*(dst + nLen) = '\0';
-
-	/*ì¸ÇÍéqÇÃóvëfÇ≈Ç†ÇÍÇŒiDepth > 0*/
-	if (iDepth != nullptr && *pEnd != nullptr)
+	static bool ReadValueRange(const char* src, const char** start, const char** end)
 	{
-		*pEnd = p + 1;
+		const char* p = SkipWhiteSpace(src);
 
-		char* q = nullptr;
-		char* qq = nullptr;
-		pp = src;
+		if (*p == '"')
+		{
+			*start = p + 1;
+			*end = SkipString(p) - 1;
+
+			return true;
+		}
+
+		if (*src == '{' || *src == '[')
+		{
+			const char* q = SkipCollection(p);
+			if (q == nullptr) return false;
+
+			*start = src;
+			*end = q;
+
+			return true;
+		}
+
+		const char* q = SkipPrimitive(p);
+		if (q == nullptr) q = strchr(src, '\0');
+
+		*start = src;
+		*end = q;
+
+		return true;
+	}
+
+} /* namespace json_minimal */
+
+bool json_minimal::FindNextObject(const char** src, const char* name, const char** start, const char** end)
+{
+	if (src == nullptr || start == nullptr || end == nullptr)return false;
+
+	const char* p1 = FindValueStart(*src, name, '{');
+	if (p1 == nullptr) return false;
+
+	const char* p2 = SkipCollection(p1);
+	if (p2 == nullptr) return false;
+
+	*start = p1;
+	*end = p2;
+	*src = p2;
+
+	return true;
+}
+bool json_minimal::FindNextArray(const char** src, const char* name, const char** start, const char** end)
+{
+	if (src == nullptr || start == nullptr || end == nullptr)return false;
+
+	const char* p1 = FindValueStart(*src, name, '[');
+	if (p1 == nullptr) return false;
+
+	const char* p2 = SkipCollection(p1);
+	if (p2 == nullptr) return false;
+
+	*start = p1;
+	*end = p2;
+	*src = p2;
+
+	return true;
+}
+
+bool json_minimal::FindValueByName(const char* src, const char* name, const char** start, const char** end, int* iDepth)
+{
+	if (src == nullptr || name == nullptr || start == nullptr || end == nullptr)return false;
+
+	const char* p1 = strstr(src, name);
+	if (p1 == nullptr) return false;
+
+	const char* p2 = strchr(p1, ':');
+	if (p2 == nullptr) return false;
+	++p2;
+
+	if (!ReadValueRange(p2, start, end))return false;
+
+	if (iDepth != nullptr)
+	{
+		const char* q = nullptr;
+		const char* qq = nullptr;
+		p2 = src;
 
 		for (;;)
 		{
-			q = strchr(pp, '}');
+			q = strchr(p2, '}');
 			if (q == nullptr)break;
 
-			qq = strchr(pp, '{');
+			qq = strchr(p2, '{');
 			if (qq == nullptr)break;
 
 			if (q < qq)
 			{
 				--(*iDepth);
-				pp = q + 1;
+				p2 = q + 1;
 			}
 			else
 			{
 				++(*iDepth);
-				pp = qq + 1;
+				p2 = qq + 1;
 			}
 
-			if (pp > p)break;
+			if (p2 > *end)break;
 		}
 	}
 
 	return true;
 }
-/*JSONëŒóvëfì«Ç›éÊÇË*/
-bool ReadNextKey(char** src, char* key, size_t nKeySize, char* value, size_t nValueSize)
+bool json_minimal::FindArrayValueByIndices(const char* src, const size_t* indices, size_t indices_size, const char** start, const char** end)
 {
-	char* p = nullptr;
-	char* pp = *src;
-	size_t nLen = 0;
+	if (src == nullptr || start == nullptr || end == nullptr)return false;
 
-	p = FindJsonNameStart(pp);
-	if (p == nullptr)return false;
-	if (*p == '"')
-	{
-		++p;
-		pp = strchr(p, '"');
-		if (pp == nullptr)return false;
-	}
-	else
-	{
-		pp = strchr(p, ':');
-		if (pp == nullptr)return false;
-	}
+	const char* p1 = src;
+	const char* p2 = nullptr;
 
-	nLen = pp - p;
-	if (nLen > nKeySize - 1)return false;
-	memcpy(key, p, nLen);
-	*(key + nLen) = '\0';
-
-	++pp;
-	p = FindJsonValueEnd(pp);
-	if (p == nullptr)return false;
-	if (*p == '"')
+	for (size_t i = 0; i < indices_size; ++i)
 	{
-		pp = p + 1;
-		p = strchr(pp, '"');
-		if (p == nullptr)return false;
+		p2 = strchr(p1, '[');
+		if (p2 == nullptr) return false;
+		p1 = p2 + 1;
+
+		for (size_t j = 0; j < indices[i]; ++j)
+		{
+			p2 = SkipValue(p1);
+			if (p2 == nullptr) return false;
+
+			p1 = SkipWhiteSpace(p2);
+			if (*p1 == ',') ++p1;
+		}
 	}
 
-	nLen = p - pp;
-	if (nLen > nValueSize - 1)return false;
-	memcpy(value, pp, nLen);
-	*(value + nLen) = '\0';
-	*src = p + 1;
+	p2 = SkipValue(p1);
+	if (p2 == nullptr) return false;
+
+	*start = p1;
+	*end = p2;
 
 	return true;
 }
-/*éüÇÃîzóÒóvëfì«Ç›éÊÇË*/
-bool ReadNextArrayValue(char** src, char* dst, size_t nDstSize)
-{
-	char* p = nullptr;
-	char* pp = *src;
-	size_t nLen = 0;
 
-	p = FindJsonNameStart(pp);
-	if (p == nullptr)return false;
-	if (*p == '"')
+bool json_minimal::util::ReadNextKeyInObject(const char** src, const char** keyStart, const char** keyEnd, const char** valueStart, const char** valueEnd)
+{
+	const char* p1 = SkipWhiteSpace(*src);
+
+	if (*p1 == '{')
 	{
-		++p;
-		pp = strchr(p, '"');
-		if (pp == nullptr)return false;
+		++p1;
+		p1 = SkipWhiteSpace(p1);
 	}
-	else if (*p == ']' || *p == '\0')
+	if (*p1 == '\0' || *p1 == '}')
 	{
 		return false;
 	}
+
+	if (*p1 == '"')
+	{
+		const char* q = SkipString(p1);
+		if (q == nullptr) return false;
+		*keyStart = p1 + 1;
+		*keyEnd = q - 1;
+		p1 = q;
+	}
 	else
 	{
-		pp = FindJsonValueEnd(p);
-		if (pp == nullptr)return false;
+		const char* q = strpbrk(p1, ":,} \t\r\n");
+		if (q == nullptr) q = strchr(p1, '\0');
+		*keyStart = p1;
+		*keyEnd = q;
+		p1 = q;
 	}
 
-	nLen = pp - p;
-	if (nLen > nDstSize - 1)return false;
-	memcpy(dst, p, nLen);
-	*(dst + nLen) = '\0';
-	*src = *pp == '"' ? pp + 1: pp;
+	const char* p2 = strchr(p1, ':');
+	if (p2 == nullptr) return false;
+	++p2;
+
+	if (!ReadValueRange(p2, valueStart, valueEnd)) return false;
+
+	const char* pNext = *valueEnd;
+	if (*pNext == '"') ++pNext;
+
+	pNext = SkipWhiteSpace(pNext);
+	if (*pNext == ',') ++pNext;
+
+	*src = pNext;
 
 	return true;
 }
-/*ñºèÃèIÇÌÇËà íuÇ‹Ç≈ì«Ç›êiÇﬂ*/
-bool ReadUpToNameEnd(char** src, const char* name, char* value, size_t nValueSize)
+
+bool json_minimal::util::ReadNextValueInArray(const char** src, const char** start, const char** end)
 {
-	char* p = nullptr;
-	char* pp = *src;
+	const char* p = SkipWhiteSpace(*src);
 
-	if (name != nullptr)
+	if (*p == '[')
 	{
-		p = strstr(pp, name);
-		if (p == nullptr)return false;
-	}
-	else
-	{
-		p = FindJsonNameStart(pp);
-		if (p == nullptr)return false;
 		++p;
+		p = SkipWhiteSpace(p);
 	}
-
-	pp = FindJsonValueEnd(p);
-	if (pp == nullptr)return false;
-
-	/*ñºèÃéÊìæ*/
-	if (name == nullptr && value != nullptr && nValueSize != 0)
+	if (*p == '\0' || *p == ']')
 	{
-		size_t nLen = pp - p;
-		if (nLen > nValueSize - 1)return false;
-		memcpy(value, p, nLen);
-		*(value + nLen) = '\0';
+		return false;
 	}
 
-	*src = *pp == '"' ? pp + 1 : pp;
+	if (!ReadValueRange(p, start, end)) return false;
+
+	const char* pNext = *end;
+	if (*pNext == '"') ++pNext;
+
+	pNext = SkipWhiteSpace(pNext);
+	if (*pNext == ',') ++pNext;
+
+	*src = pNext;
 
 	return true;
 }
-
-} // namespace json_minimal
