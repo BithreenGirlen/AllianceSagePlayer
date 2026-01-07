@@ -117,7 +117,8 @@ int CSdlMainWindow::Display()
 	::SDL_ShowWindow(m_window.get());
 
 	m_pBgPlayer = std::make_unique<CMfMediaPlayer>();
-	m_pBgPlayer->SwitchLoop();
+	m_pBgPlayer->SetLoop(true);
+	m_pBgPlayer->SetCurrentVolume(0.1);
 
 	int iRet = 0;
 	bool bToBeQuit = false;
@@ -472,7 +473,7 @@ std::wstring CSdlMainWindow::FormatMessageText()
 	const adv::TextDatum& textDatum = m_textData[m_nTextIndex];
 	std::wstring wstr = textDatum.wstrText;
 	if (!wstr.empty() && wstr.back() != '\n')wstr += '\n';
-	wstr += std::to_wstring(m_nTextIndex + 1) + L"/" + std::to_wstring(m_textData.size());
+	wstr += std::to_wstring(m_nTextIndex + 1).append(L"/").append(std::to_wstring(m_textData.size()));
 	return wstr;
 }
 /*文字色切り替え*/
@@ -493,10 +494,10 @@ void CSdlMainWindow::RenderText(const std::wstring& wstr, int iPosX, int iPosY)
 	const SDL_Color kBlack = SDL_Color{ 0x00, 0x00, 0x00 };
 
 	std::vector<Uint16> textBuffer;
-	textBuffer.reserve(wstr.size());
-	for (const auto& c : wstr)
+	textBuffer.resize(wstr.size());
+	for (size_t i = 0; i < wstr.size(); ++i)
 	{
-		textBuffer.push_back(c);
+		textBuffer[i] = wstr[i];
 	}
 	textBuffer.push_back(L'\0');
 
