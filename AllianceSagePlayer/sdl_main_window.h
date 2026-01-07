@@ -6,7 +6,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2_ttf/SDL_ttf.h>
 
-#include "sdl_spine_player.h"
+#include "sdl2-spine-cpp/sdl_spine_player.h"
 #include "sdl_clock.h"
 #include "adv.h"
 
@@ -26,16 +26,16 @@ public:
 	~CSdlMainWindow();
 
 	bool SetSpineFromFile(const std::vector<std::string>& atlasPaths, const std::vector<std::string>& skelPaths, bool isBinarySkel);
-	
+
 	void SetSlotsToExclude(const std::vector<std::string>& slotNames);
 	void SetSlotExclusionCallback(bool (*pFunc)(const char*, size_t));
-	
+
 	bool SetFont(const char* szFontFilePath, bool bBold = false, bool bItalic = false);
 	void SetScenarioData(std::vector<adv::TextDatum>& textData, std::vector<std::string>& animationNames);
 
 	int Display();
 private:
-	enum EFontSize{kOutLineSize = 1, kFillSize = 32};
+	enum EFontSize { kOutLineSize = 1, kFillSize = 32 };
 
 	std::shared_ptr<SDL_Window> m_window;
 	std::shared_ptr<SDL_Renderer> m_renderer;

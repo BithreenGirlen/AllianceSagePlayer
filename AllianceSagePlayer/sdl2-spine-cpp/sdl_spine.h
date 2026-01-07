@@ -4,11 +4,11 @@
 #include <spine/spine.h>
 #include <SDL2/SDL.h>
 
-class CSdlSpineDrawer
+class CSdlSpineDrawable
 {
 public:
-	CSdlSpineDrawer(spine::SkeletonData* pSkeletonData, spine::AnimationStateData* pAnimationStateData = nullptr);
-	~CSdlSpineDrawer();
+	CSdlSpineDrawable(spine::SkeletonData* pSkeletonData, spine::AnimationStateData* pAnimationStateData = nullptr);
+	~CSdlSpineDrawable();
 
 	spine::Skeleton* skeleton = nullptr;
 	spine::AnimationState* animationState = nullptr;
@@ -17,12 +17,13 @@ public:
 	bool isToForceBlendModeNormal = false;
 
 	void Update(float fDelta);
-	void Draw(SDL_Renderer* pSdlRenderer, float fOffsetX = 0.f, float fOffsetY = 0.f);
+	void Draw(float fOffsetX = 0.f, float fOffsetY = 0.f);
 
 	void SetLeaveOutList(spine::Vector<spine::String>& list);
 	void SetLeaveOutCallback(bool (*pFunc)(const char*, size_t)) { m_pLeaveOutCallback = pFunc; }
 
 	SDL_FRect GetBoundingBox() const;
+	SDL_FRect GetBoundingBoxOfSlot(const char* slotName, size_t nameLength, bool* found = nullptr) const;
 private:
 	bool m_hasOwnAnimationStateData = false;
 
@@ -47,11 +48,13 @@ public:
 
 	void SetRenderer(SDL_Renderer* pSdlRenderer) { m_pSdlRenderer = pSdlRenderer; };
 
-	virtual void load(spine::AtlasPage& atlasPage, const spine::String& path);
-	virtual void unload(void* texture);
+	void load(spine::AtlasPage& atlasPage, const spine::String& path) override;
+	void unload(void* texture) override;
 private:
 	SDL_Renderer* m_pSdlRenderer = nullptr;
+#ifdef _DEBUG
 	spine::String m_SdlErrorMassage;
+#endif
 };
 
 #endif //!SDL_SPINE_H_

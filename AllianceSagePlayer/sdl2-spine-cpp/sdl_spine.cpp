@@ -1,5 +1,8 @@
 ﻿
 
+/* To calculate bounding box */
+#include <float.h>
+
 #include <SDL2/SDL.h>
 #include <SDL2_image/SDL_image.h>
 
@@ -72,7 +75,7 @@ struct SdlSpineBlendMode
 	);
 };
 
-CSdlSpineDrawer::CSdlSpineDrawer(spine::SkeletonData* pSkeletonData, spine::AnimationStateData* pAnimationStateData)
+CSdlSpineDrawable::CSdlSpineDrawable(spine::SkeletonData* pSkeletonData, spine::AnimationStateData* pAnimationStateData)
 {
 	if (pSkeletonData == nullptr)return;
 
@@ -96,7 +99,7 @@ CSdlSpineDrawer::CSdlSpineDrawer(spine::SkeletonData* pSkeletonData, spine::Anim
 	m_quadIndices.add(0);
 }
 
-CSdlSpineDrawer::~CSdlSpineDrawer()
+CSdlSpineDrawable::~CSdlSpineDrawable()
 {
 	if (animationState != nullptr)
 	{
@@ -113,7 +116,7 @@ CSdlSpineDrawer::~CSdlSpineDrawer()
 	}
 }
 
-void CSdlSpineDrawer::Update(float fDelta)
+void CSdlSpineDrawable::Update(float fDelta)
 {
 	if (skeleton != nullptr && animationState != nullptr)
 	{
@@ -131,9 +134,9 @@ void CSdlSpineDrawer::Update(float fDelta)
 	}
 }
 
-void CSdlSpineDrawer::Draw(SDL_Renderer* pSdlRenderer, float fOffsetX, float fOffsetY)
+void CSdlSpineDrawable::Draw(float fOffsetX, float fOffsetY)
 {
-	if (pSdlRenderer == nullptr || skeleton == nullptr || animationState == nullptr)return;
+	if (skeleton == nullptr || animationState == nullptr)return;
 
 	if (skeleton->getColor().a == 0) return;
 
@@ -166,6 +169,7 @@ void CSdlSpineDrawer::Draw(SDL_Renderer* pSdlRenderer, float fOffsetX, float fOf
 		spine::Color* pAttachmentColor = nullptr;
 
 		SDL_Texture* pSdlTexture = nullptr;
+		SDL_Renderer* pSdlRenderer = nullptr;
 
 		if (pAttachment->getRTTI().isExactly(spine::RegionAttachment::rtti))
 		{
@@ -241,6 +245,10 @@ void CSdlSpineDrawer::Draw(SDL_Renderer* pSdlRenderer, float fOffsetX, float fOf
 			continue;
 		}
 
+		if (pSdlTexture == nullptr)continue;
+		pSdlRenderer = static_cast<SDL_Renderer*>(::SDL_GetTextureUserData(pSdlTexture));
+		if (pSdlRenderer == nullptr)continue;
+
 		if (m_clipper.isClipping())
 		{
 			m_clipper.clipTriangles(m_worldVertices, *pIndices, *pAttachmentUvs, 2);
@@ -280,10 +288,10 @@ void CSdlSpineDrawer::Draw(SDL_Renderer* pSdlRenderer, float fOffsetX, float fOf
 			m_sdlVertices.add(sdlVertex);
 		}
 
-		m_sdlIndices.clear();
+		m_sdlIndices.setSize(pIndices->size(), 0);
 		for (int ii = 0; ii < pIndices->size(); ++ii)
 		{
-			m_sdlIndices.add((*pIndices)[ii]);
+			m_sdlIndices[ii] = static_cast<int>((*pIndices)[ii]);
 		}
 
 		spine::BlendMode spineBlendMode = isToForceBlendModeNormal ? spine::BlendMode::BlendMode_Normal : slot.getData().getBlendMode();
@@ -317,13 +325,13 @@ void CSdlSpineDrawer::Draw(SDL_Renderer* pSdlRenderer, float fOffsetX, float fOf
 	m_clipper.clipEnd();
 }
 
-void CSdlSpineDrawer::SetLeaveOutList(spine::Vector<spine::String>& list)
+void CSdlSpineDrawable::SetLeaveOutList(spine::Vector<spine::String>& list)
 {
 	/*There are some slots having mask or nuisance effect; exclude them from rendering.*/
 	m_leaveOutList.clearAndAddAll(list);
 }
 
-SDL_FRect CSdlSpineDrawer::GetBoundingBox() const
+SDL_FRect CSdlSpineDrawable::GetBoundingBox() const
 {
 	SDL_FRect boundingBox{};
 
@@ -336,7 +344,71 @@ SDL_FRect CSdlSpineDrawer::GetBoundingBox() const
 	return boundingBox;
 }
 
-bool CSdlSpineDrawer::IsToBeLeftOut(const spine::String& slotName)
+SDL_FRect CSdlSpineDrawable::GetBoundingBoxOfSlot(const char* slotName, size_t nameLength, bool* found) const
+{
+	float fMinX = FLT_MAX;
+	float fMinY = FLT_MAX;
+	float fMaxX = -FLT_MAX;
+	float fMaxY = -FLT_MAX;
+
+	if (skeleton != nullptr)
+	{
+		for (size_t i = 0; i < skeleton->getSlots().size(); ++i)
+		{
+			spine::Slot& slot = *skeleton->getDrawOrder()[i];
+			const spine::String& slotDataName = slot.getData().getName();
+			if (nameLength != slotDataName.length())continue;
+
+			if (::memcmp(slotDataName.buffer(), slotName, slotDataName.length()) == 0)
+			{
+				spine::Attachment* pAttachment = slot.getAttachment();
+				if (pAttachment != nullptr)
+				{
+					spine::Vector<float> tempVertices;
+					if (pAttachment->getRTTI().isExactly(spine::RegionAttachment::rtti))
+					{
+						spine::RegionAttachment* pRegionAttachment = static_cast<spine::RegionAttachment*>(pAttachment);
+
+						tempVertices.setSize(8, 0);
+#ifdef SPINE_4_1_OR_LATER
+						pRegionAttachment->computeWorldVertices(slot, tempVertices, 0, 2);
+#else
+						pRegionAttachment->computeWorldVertices(slot.getBone(), tempVertices, 0, 2);
+#endif
+					}
+					else if (pAttachment->getRTTI().isExactly(spine::MeshAttachment::rtti))
+					{
+						spine::MeshAttachment* pMeshAttachment = static_cast<spine::MeshAttachment*>(pAttachment);
+						tempVertices.setSize(pMeshAttachment->getWorldVerticesLength(), 0);
+						pMeshAttachment->computeWorldVertices(slot, 0, pMeshAttachment->getWorldVerticesLength(), tempVertices, 0, 2);
+					}
+					else
+					{
+						continue;
+					}
+
+					for (size_t i = 0; i < tempVertices.size(); i += 2)
+					{
+						float fX = tempVertices[i];
+						float fY = tempVertices[i + 1LL];
+
+						fMinX = fMinX < fX ? fMinX : fX;
+						fMinY = fMinY < fY ? fMinY : fY;
+						fMaxX = fMaxX > fX ? fMaxX : fX;
+						fMaxY = fMaxY > fY ? fMaxY : fY;
+					}
+
+					if (found != nullptr)*found = true;
+					break;
+				}
+			}
+		}
+	}
+
+	return SDL_FRect { fMinX, fMinY, fMaxX - fMinX, fMaxY - fMinY };
+}
+
+bool CSdlSpineDrawable::IsToBeLeftOut(const spine::String& slotName)
 {
 	if (m_pLeaveOutCallback != nullptr)
 	{
@@ -357,9 +429,13 @@ void CSdlTextureLoader::load(spine::AtlasPage& atlasPage, const spine::String& p
 	SDL_Texture* pSdlTexture = ::IMG_LoadTexture(m_pSdlRenderer, path.buffer());
 	if (pSdlTexture == nullptr)
 	{
+#ifdef _DEBUG
 		m_SdlErrorMassage = ::SDL_GetError();
+#endif
 		return;
 	}
+
+	::SDL_SetTextureUserData(pSdlTexture, m_pSdlRenderer);
 
 	switch (atlasPage.magFilter)
 	{
@@ -374,6 +450,7 @@ void CSdlTextureLoader::load(spine::AtlasPage& atlasPage, const spine::String& p
 	}
 
 	/*In case atlas size does not coincide with that of png, overwriting will collapse the layout.*/
+#if 0
 	if (atlasPage.width == 0 || atlasPage.height == 0)
 	{
 		int iWidth = 0;
@@ -385,6 +462,8 @@ void CSdlTextureLoader::load(spine::AtlasPage& atlasPage, const spine::String& p
 			atlasPage.height = iHeight;
 		}
 	}
+#endif
+
 #ifdef SPINE_4_1_OR_LATER
 	atlasPage.texture = pSdlTexture;
 #else

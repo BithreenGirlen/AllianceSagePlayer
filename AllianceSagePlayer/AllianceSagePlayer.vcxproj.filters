@@ -19,18 +19,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header File\sdl2-spine-cpp">
+      <UniqueIdentifier>{5ccc720e-2c9f-4da1-8908-6c60931300c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source File\sdl2-spine-cpp">
+      <UniqueIdentifier>{be00e6f7-f541-4e93-adef-0282645fec8f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sdl_main_window.h">
-      <Filter>Header File</Filter>
-    </ClInclude>
-    <ClInclude Include="sdl_spine_player.h">
-      <Filter>Header File</Filter>
-    </ClInclude>
-    <ClInclude Include="spine_loader.h">
-      <Filter>Header File</Filter>
-    </ClInclude>
-    <ClInclude Include="spine_player.h">
       <Filter>Header File</Filter>
     </ClInclude>
     <ClInclude Include="win_dialogue.h">
@@ -57,24 +54,21 @@
     <ClInclude Include="mf_media_player.h">
       <Filter>Header File</Filter>
     </ClInclude>
-    <ClInclude Include="sdl_spine.h">
-      <Filter>Header File</Filter>
+    <ClInclude Include="sdl2-spine-cpp\sdl_spine.h">
+      <Filter>Header File\sdl2-spine-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="sdl2-spine-cpp\sdl_spine_player.h">
+      <Filter>Header File\sdl2-spine-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="sdl2-spine-cpp\spine_loader.h">
+      <Filter>Header File\sdl2-spine-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="sdl2-spine-cpp\spine_player.h">
+      <Filter>Header File\sdl2-spine-cpp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
-      <Filter>Source File</Filter>
-    </ClCompile>
-    <ClCompile Include="sdl_main_window.cpp">
-      <Filter>Source File</Filter>
-    </ClCompile>
-    <ClCompile Include="sdl_spine_player.cpp">
-      <Filter>Source File</Filter>
-    </ClCompile>
-    <ClCompile Include="spine_loader.cpp">
-      <Filter>Source File</Filter>
-    </ClCompile>
-    <ClCompile Include="spine_player.cpp">
       <Filter>Source File</Filter>
     </ClCompile>
     <ClCompile Include="deps\spine-cpp-3.8\src\spine\Animation.cpp">
@@ -281,8 +275,20 @@
     <ClCompile Include="mf_media_player.cpp">
       <Filter>Source File</Filter>
     </ClCompile>
-    <ClCompile Include="sdl_spine.cpp">
+    <ClCompile Include="sdl_main_window.cpp">
       <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="sdl2-spine-cpp\sdl_spine.cpp">
+      <Filter>Source File\sdl2-spine-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="sdl2-spine-cpp\sdl_spine_player.cpp">
+      <Filter>Source File\sdl2-spine-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="sdl2-spine-cpp\spine_loader.cpp">
+      <Filter>Source File\sdl2-spine-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="sdl2-spine-cpp\spine_player.cpp">
+      <Filter>Source File\sdl2-spine-cpp</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
