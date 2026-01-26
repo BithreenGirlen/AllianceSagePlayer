@@ -1,4 +1,5 @@
-# AllianceSagePlayer
+﻿# AllianceSagePlayer
+
 某寝室用。
 
 ## How to play
@@ -42,6 +43,7 @@ Then, select a script file named as `*_3.json`, `*_4.json`, or `7*.json` from th
 The scene will be set up based on the specification of the selected script file.
 
 ## Mouse function
+
 | Input | Function |
 | --- | --- |
 | Mouse wheel | Scale up/down the skeleton. |
@@ -51,6 +53,7 @@ The scene will be set up based on the specification of the selected script file.
 | Right button + mouse wheel | Fast-forward/rewind the text. |
 
 ## Keyboard function
+
 | Input  | Function  |
 | --- | --- |
 | <kbd>Esc</kbd> | Close the application. |
@@ -64,9 +67,9 @@ The scene will be set up based on the specification of the selected script file.
 | <kbd>←</kbd> | Rewind the text. |
 
 ## External libraries
-- [SDL2-2.30.3](https://github.com/libsdl-org/SDL/releases/tag/release-2.30.3)
-- [SDL2_image-2.8.2](https://github.com/libsdl-org/SDL_image/releases/tag/release-2.8.2)
-- [SDL2_ttf-2.22.0](https://github.com/libsdl-org/SDL_ttf/releases/tag/release-2.22.0)
+- [SDL3-3.4.0](https://github.com/libsdl-org/SDL/releases/tag/release-3.4.0)
+- [SDL3_image-3.2.6](https://github.com/libsdl-org/SDL_image/releases/tag/release-3.2.6)
+- [SDL3_ttf-3.2.2](https://github.com/libsdl-org/SDL_ttf/releases/tag/release-3.2.2)
 - [spine-cpp-3.8](https://github.com/EsotericSoftware/spine-runtimes/tree/3.8)
 
 ## Build
@@ -80,28 +83,28 @@ The scene will be set up based on the specification of the selected script file.
 <pre>
 AllianceSagePlayer
   ├ deps
-  │  ├ SDL2_image-2.8.2 // SDL_image header and static lib for VC
+  │  ├ SDL3_image-3.2.6 // SDL_image header and static lib for VC
   │  │  ├ include
-  │  │  │  └ SDL2_image
+  │  │  │  └ SDL3_image
   │  │  │    └ SDL_image.h
   │  │  └ lib
   │  │     └ x64
-  │  │       └ SDL2_image.lib
-  │  ├ SDL2_ttf-2.22.0 // SDL_ttf header and static lib for VC
+  │  │       └ SDL3_image.lib
+  │  ├ SDL3_ttf-3.2.2 // SDL_ttf header and static lib for VC
   │  │  ├ include
-  │  │  │  └ SDL2_ttf
+  │  │  │  └ SDL3_ttf
   │  │  │    └ SDL_ttf.h 
   │  │  └ lib
   │  │     └ x64
-  │  │       └ SDL2_ttf.lib
-  │  ├ SDL2-2.30.3 // SDL headers and static lib for VC
+  │  │       └ SDL3_ttf.lib
+  │  ├ SDL3-3.4.0 // SDL headers and static lib for VC
   │  │  ├ include
-  │  │  │  └ SDL2
+  │  │  │  └ SDL3
   │  │  │    ├ begin_code.h 
   │  │  │    └ ...  
   │  │  └ lib
   │  │     └ x64
-  │  │       └ SDL2.lib
+  │  │       └ SDL3.lib
   │  └ spine-cpp-3.8 // C++ Spine runtime for version 3.8.xx
   │     ├ include
   │     │  └ ...
