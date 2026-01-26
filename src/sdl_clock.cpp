@@ -3,7 +3,7 @@
 
 CSdlClock::CSdlClock()
 {
-	Restart();
+	restart();
 }
 
 CSdlClock::~CSdlClock()
@@ -11,20 +11,20 @@ CSdlClock::~CSdlClock()
 
 }
 
-float CSdlClock::GetElapsedTime()
+float CSdlClock::getElapsedTime()
 {
 	Uint64 freq = ::SDL_GetPerformanceFrequency();
 
-	Uint64 nNow = GetNowCounter();
+	Uint64 nNow = getNowCounter();
 	return (nNow - m_nLastCounter) / (float)freq;
 }
 
-void CSdlClock::Restart()
+void CSdlClock::restart()
 {
-	m_nLastCounter = GetNowCounter();
+	m_nLastCounter = getNowCounter();
 }
 
-Uint64 CSdlClock::GetNowCounter()
+Uint64 CSdlClock::getNowCounter()
 {
 	return ::SDL_GetPerformanceCounter();
 }

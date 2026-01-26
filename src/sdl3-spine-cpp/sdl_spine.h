@@ -7,30 +7,32 @@
 class CSdlSpineDrawable
 {
 public:
-	CSdlSpineDrawable(spine::SkeletonData* pSkeletonData, spine::AnimationStateData* pAnimationStateData = nullptr);
+	CSdlSpineDrawable(spine::SkeletonData* pSkeletonData);
 	~CSdlSpineDrawable();
 
-	spine::Skeleton* skeleton = nullptr;
-	spine::AnimationState* animationState = nullptr;
+	spine::Skeleton* skeleton() const;
+	spine::AnimationState* animationState() const;
 
-	void PremultiplyAlpha(bool toPremultiply);
-	bool IsAlphaPremultiplied() const;
+	void premultiplyAlpha(bool toPremultiply);
+	bool isAlphaPremultiplied() const;
 
-	void ForceBlendModeNormal(bool toForce);
-	bool IsBlendModeNormalForced() const;
+	void forceBlendModeNormal(bool toForce);
+	bool isBlendModeNormalForced() const;
 
-	void Update(float fDelta);
-	void Draw(float fOffsetX = 0.f, float fOffsetY = 0.f);
+	void update(float fDelta);
+	void draw(float fOffsetX = 0.f, float fOffsetY = 0.f);
 
-	void SetLeaveOutList(spine::Vector<spine::String>& list);
-	void SetLeaveOutCallback(bool (*pFunc)(const char*, size_t)) { m_pLeaveOutCallback = pFunc; }
+	void setLeaveOutList(spine::Vector<spine::String>& list);
+	void setLeaveOutCallback(bool (*pFunc)(const char*, size_t)) { m_pLeaveOutCallback = pFunc; }
 
-	SDL_FRect GetBoundingBox() const;
-	SDL_FRect GetBoundingBoxOfSlot(const char* slotName, size_t nameLength, bool* found = nullptr) const;
+	SDL_FRect getBoundingBox() const;
+	SDL_FRect getBoundingBoxOfSlot(const char* slotName, size_t nameLength, bool* found = nullptr) const;
 private:
-	bool m_hasOwnAnimationStateData = false;
 	bool m_isAlphaPremultiplied = true;
 	bool m_toForceBlendModeNormal = false;
+
+	spine::Skeleton* m_skeleton = nullptr;
+	spine::AnimationState* m_animationState = nullptr;
 
 	spine::SkeletonClipping m_clipper;
 
@@ -41,7 +43,7 @@ private:
 
 	spine::Vector<spine::String> m_leaveOutList;
 
-	bool IsSlotToBeLeftOut(const spine::String& slotName);
+	bool isSlotToBeLeftOut(const spine::String& slotName);
 	bool (*m_pLeaveOutCallback)(const char*, size_t) = nullptr;
 };
 
@@ -51,7 +53,7 @@ public:
 	CSdlTextureLoader() {};
 	virtual ~CSdlTextureLoader() {};
 
-	void SetRenderer(SDL_Renderer* pSdlRenderer);
+	void setRenderer(SDL_Renderer* pSdlRenderer);
 
 	void load(spine::AtlasPage& atlasPage, const spine::String& path) override;
 	void unload(void* texture) override;

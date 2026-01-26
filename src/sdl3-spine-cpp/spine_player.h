@@ -8,9 +8,11 @@
 #include <memory>
 
 #include "sdl_spine.h"
+#include "sdl_spine_loader.h"
 using FPoint2 = SDL_FPoint;
 using CSpineDrawable = CSdlSpineDrawable;
 using CTextureLoader = CSdlTextureLoader;
+namespace spine_loader = sdl_spine_loader;
 
 
 class CSpinePlayer
@@ -19,80 +21,81 @@ public:
 	CSpinePlayer();
 	virtual ~CSpinePlayer();
 
-	bool LoadSpineFromFile(const std::vector<std::string>& atlasPaths, const std::vector<std::string>& skelPaths, bool isBinarySkel);
-	bool LoadSpineFromMemory(const std::vector<std::string>& atlasData, const std::vector<std::string>& texturePaths, const std::vector<std::string>& skelData, bool isBinarySkel);
+	bool loadSpineFromFile(const std::vector<std::string>& atlasFilePaths, const std::vector<std::string>& skeletonFilePaths);
+	bool loadSpineFromMemory(const std::vector<std::string>& atlasFileData, const std::vector<std::string>& textureDirectories, const std::vector<std::string>& SkeletonFileData);
 
-	size_t GetNumberOfSpines() const;
-	bool HasSpineBeenLoaded() const;
+	size_t getNumberOfSpines() const;
+	bool hasSpineBeenLoaded() const;
 
-	void Update(float fDelta);
+	void update(float fDelta);
 
 	void ResetScale();
 
-	void MoveViewPoint(int iX, int iY);
+	void addOffset(int iX, int iY);
 
-	void ShiftAnimation();
-	void ShiftSkin();
+	void shiftAnimation();
+	void shiftSkin();
 
-	void SetAnimationByIndex(size_t nIndex);
-	void SetAnimationByName(const char* animationName);
-	void RestartAnimation();
+	void setAnimationByIndex(size_t nIndex);
+	void setAnimationByName(const char* animationName);
+	void restartAnimation();
 
-	void SetSkinByIndex(size_t nIndex);
-	void SetSkinByName(const char* skinName);
-	void SetupSkin();
+	void setSkinByIndex(size_t nIndex);
+	void setSkinByName(const char* skinName);
+	void setupSkin();
 
-	void TogglePma();
-	void ToggleBlendMode();
+	void togglePma();
+	void toggleBlendMode();
 
-	bool PremultiplyAlpha(bool toBePremultiplied, size_t nDrawableIndex = 0);
-	bool IsAlphaPremultiplied(size_t nDrawableIndex = 0) const;
+	bool premultiplyAlpha(bool toBePremultiplied, size_t nDrawableIndex = 0);
+	bool isAlphaPremultiplied(size_t nDrawableIndex = 0) const;
 
-	bool ForceBlendModeNormal(bool toForce, size_t nDrawableIndex = 0);
-	bool IsBlendModeNormalForced(size_t nDrawableIndex = 0) const;
+	bool forceBlendModeNormal(bool toForce, size_t nDrawableIndex = 0);
+	bool isBlendModeNormalForced(size_t nDrawableIndex = 0) const;
 
-	void SetDrawOrder(bool toBeReversed);
-	bool IsDrawOrderReversed() const;
+	void setDrawOrder(bool toBeReversed);
+	bool isDrawOrderReversed() const;
 
-	const char* GetCurrentAnimationName();
+	const char* getCurrentAnimationName();
 	/// @brief Get animation time actually entried in track.
 	/// @param fTrack elapsed time since the track was entried.
 	/// @param fLast current timeline position.
 	/// @param fStart timeline start position.
 	/// @param fEnd timeline end position.
-	void GetCurrentAnimationTime(float* fTrack, float* fLast, float* fStart, float* fEnd);
+	void getCurrentAnimationTime(float* fTrack, float* fLast, float* fStart, float* fEnd);
 
-	std::vector<std::string> GetSlotNames();
-	const std::vector<std::string>& GetSkinNames() const;
+	std::vector<std::string> getSlotNames();
+	const std::vector<std::string>& getSkinNames() const;
 	const std::vector<std::string>& GetAnimationNames() const;
 
-	void SetSlotsToExclude(const std::vector<std::string>& slotNames);
-	void MixSkins(const std::vector<std::string>& skinNames);
-	void MixAnimations(const std::vector<std::string>& animationNames);
+	void setSlotsToExclude(const std::vector<std::string>& slotNames);
+	void mixSkins(const std::vector<std::string>& skinNames);
+	void mixAnimations(const std::vector<std::string>& animationNames);
 
-	void SetSlotExclusionCallback(bool (*pFunc)(const char*, size_t));
+	void setSlotExclusionCallback(bool (*pFunc)(const char*, size_t));
 
-	FPoint2 GetBaseSize() const;
-	void SetBaseSize(float fWidth, float fHeight);
-	void ResetBaseSize();
+	FPoint2 getBaseSize() const;
+	void setBaseSize(float fWidth, float fHeight);
+	void resetBaseSize();
 
-	FPoint2 GetOffset() const;
+	FPoint2 getOffset() const;
+	void setOffset(float fWidth, float fHeight);
 
-	float GetSkeletonScale() const;
-	void SetSkeletonScale(float fScale);
+	float getSkeletonScale() const;
+	void setSkeletonScale(float fScale);
 
-	float GetCanvasScale() const;
-	void SetCanvasScale(float fScale);
+	float getCanvasScale() const;
+	void setCanvasScale(float fScale);
 
-	float GetTimeScale() const;
-	void SetTimeScale(float fTimeScale);
+	float getTimeScale() const;
+	void setTimeScale(float fTimeScale);
 protected:
 	enum Constants { kBaseWidth = 1280, kBaseHeight = 720 };
 
 	CTextureLoader m_textureLoader;
-	std::vector<std::unique_ptr<spine::Atlas>> m_atlases;
+	std::vector<std::shared_ptr<spine::Atlas>> m_atlases;
 	std::vector<std::shared_ptr<spine::SkeletonData>> m_skeletonData;
-	std::vector<std::shared_ptr<CSpineDrawable>> m_drawables;
+	std::vector<std::unique_ptr<CSpineDrawable>> m_drawables;
 
 	FPoint2 m_fBaseSize = FPoint2{ kBaseWidth, kBaseHeight };
 
@@ -112,16 +115,16 @@ protected:
 	std::vector<std::string> m_skinNames;
 	size_t m_nSkinIndex = 0;
 
-	void ClearDrawables();
-	bool SetupDrawer();
+	void clearDrawables();
+	bool setupDrawer();
 
-	void WorkOutDefaultSize();
-	virtual void WorkOutDefaultScale() = 0;
-	virtual void WorkOutDefaultOffset() = 0;
+	void workOutDefaultSize();
+	virtual void workOutDefaultScale() = 0;
+	virtual void workOutDefaultOffset() = 0;
 
-	void UpdatePosition();
+	void updatePosition();
 
-	void ClearAnimationTracks();
+	void clearAnimationTracks();
 };
 
 #endif // !SPINE_PLAYER_H_

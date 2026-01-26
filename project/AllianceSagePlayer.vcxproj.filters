@@ -60,10 +60,16 @@
     <ClInclude Include="..\src\sdl3-spine-cpp\sdl_spine_player.h">
       <Filter>Header File\sdl3-spine-cpp</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\sdl3-spine-cpp\spine_loader.h">
+    <ClInclude Include="..\src\sdl3-spine-cpp\spine_player.h">
       <Filter>Header File\sdl3-spine-cpp</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\sdl3-spine-cpp\spine_player.h">
+    <ClInclude Include="..\src\sdl3-spine-cpp\sdl_spine_extension.h">
+      <Filter>Header File\sdl3-spine-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sdl3-spine-cpp\sdl_spine_loader.h">
+      <Filter>Header File\sdl3-spine-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sdl3-spine-cpp\spine_file_verifier.h">
       <Filter>Header File\sdl3-spine-cpp</Filter>
     </ClInclude>
   </ItemGroup>
@@ -101,10 +107,16 @@
     <ClCompile Include="..\src\sdl3-spine-cpp\sdl_spine_player.cpp">
       <Filter>Source File\sdl3-spine-cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\sdl3-spine-cpp\spine_loader.cpp">
+    <ClCompile Include="..\src\sdl3-spine-cpp\spine_player.cpp">
       <Filter>Source File\sdl3-spine-cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\sdl3-spine-cpp\spine_player.cpp">
+    <ClCompile Include="..\src\sdl3-spine-cpp\sdl_spine_extension.cpp">
+      <Filter>Source File\sdl3-spine-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sdl3-spine-cpp\spine_file_verifier.cpp">
+      <Filter>Source File\sdl3-spine-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sdl3-spine-cpp\sdl_spine_loader.cpp">
       <Filter>Source File\sdl3-spine-cpp</Filter>
     </ClCompile>
   </ItemGroup>

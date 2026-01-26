@@ -9,12 +9,12 @@ public:
     CSdlClock();
     ~CSdlClock();
 
-    float GetElapsedTime();
-    void Restart();
+    float getElapsedTime();
+    void restart();
 private:
     Uint64 m_nLastCounter{};
 
-    Uint64 GetNowCounter();
+    Uint64 getNowCounter();
 };
 #endif // !SDL_CLOCK_H_
 

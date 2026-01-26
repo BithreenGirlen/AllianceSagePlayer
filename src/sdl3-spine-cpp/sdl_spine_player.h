@@ -9,12 +9,12 @@ public:
 	CSdlSpinePlayer(SDL_Window* pSdlWindow, SDL_Renderer* pSdlRenderer);
 	virtual ~CSdlSpinePlayer();
 
-	void Redraw();
+	void redraw();
 
-	SDL_FRect GetCurrentBoundingOfSlot(const char* slotName, size_t nameLength) const;
+	SDL_FRect getCurrentBoundingOfSlot(const char* slotName, size_t nameLength) const;
 private:
-	void WorkOutDefaultScale() override;
-	void WorkOutDefaultOffset() override;
+	void workOutDefaultScale() override;
+	void workOutDefaultOffset() override;
 
 	SDL_Window *m_pSdlWindow = nullptr;
 	SDL_Renderer* m_pSdlRenderer = nullptr;

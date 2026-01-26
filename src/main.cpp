@@ -72,7 +72,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}), scriptFilePaths.end());
 
 	CSdlMainWindow mainWindow("SDL spine player", CSdlMainWindow::EBackEnd::kDirectX);
-	mainWindow.SetFont("C:\\Windows\\Fonts\\yumin.ttf", true, true);
+	mainWindow.setFont("C:\\Windows\\Fonts\\yumin.ttf", true, true);
 
 	for (;;)
 	{
@@ -91,13 +91,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			skelPaths.emplace_back(spineFilePath + ".json");
 		}
 
-		bRet = mainWindow.SetSpineFromFile(atlasPaths, skelPaths, false);
+		bRet = mainWindow.setSpineFromFile(atlasPaths, skelPaths);
 		if (!bRet)break;
 
-		mainWindow.SetSlotsToExclude({ "frame" });
-		mainWindow.SetScenarioData(textData, animationNames);
+		mainWindow.setSlotsToExclude({ "frame" });
+		mainWindow.setScenarioData(textData, animationNames);
 
-		int iRet = mainWindow.Display();
+		int iRet = mainWindow.display();
 		if (iRet == 1)
 		{
 			++nFileIndex;

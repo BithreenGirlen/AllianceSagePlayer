@@ -26,7 +26,7 @@ CSdlMainWindow::CSdlMainWindow(const char* windowName, EBackEnd eBackEnd, bool t
 			}
 		);
 
-	if (m_window.get() == nullptr)return;
+	if (m_window == nullptr)return;
 
 	::SDL_SetWindowPosition(m_window.get(), 0, 0);
 
@@ -51,33 +51,33 @@ CSdlMainWindow::~CSdlMainWindow()
 
 }
 
-bool CSdlMainWindow::SetSpineFromFile(const std::vector<std::string>& atlasPaths, const std::vector<std::string>& skelPaths, bool isBinarySkel)
+bool CSdlMainWindow::setSpineFromFile(const std::vector<std::string>& atlasFilePaths, const std::vector<std::string>& skelFilePaths)
 {
-	if (m_sdlSpinePlayer.get() != nullptr)
+	if (m_sdlSpinePlayer != nullptr)
 	{
-		return m_sdlSpinePlayer.get()->LoadSpineFromFile(atlasPaths, skelPaths, isBinarySkel);
+		return m_sdlSpinePlayer->loadSpineFromFile(atlasFilePaths, skelFilePaths);
 	}
 
 	return false;
 }
 
-void CSdlMainWindow::SetSlotsToExclude(const std::vector<std::string>& slotNames)
+void CSdlMainWindow::setSlotsToExclude(const std::vector<std::string>& slotNames)
 {
-	if (m_sdlSpinePlayer.get() != nullptr)
+	if (m_sdlSpinePlayer != nullptr)
 	{
-		m_sdlSpinePlayer.get()->SetSlotsToExclude(slotNames);
+		m_sdlSpinePlayer->setSlotsToExclude(slotNames);
 	}
 }
 
-void CSdlMainWindow::SetSlotExclusionCallback(bool(*pFunc)(const char*, size_t))
+void CSdlMainWindow::setSlotExclusionCallback(bool(*pFunc)(const char*, size_t))
 {
-	if (m_sdlSpinePlayer.get() != nullptr)
+	if (m_sdlSpinePlayer != nullptr)
 	{
-		m_sdlSpinePlayer.get()->SetSlotExclusionCallback(pFunc);
+		m_sdlSpinePlayer->setSlotExclusionCallback(pFunc);
 	}
 }
 
-bool CSdlMainWindow::SetFont(const char* fontFilePath, bool bold, bool italic)
+bool CSdlMainWindow::setFont(const char* fontFilePath, bool bold, bool italic)
 {
 	m_fillFont = std::shared_ptr<TTF_Font>
 		(
@@ -88,7 +88,7 @@ bool CSdlMainWindow::SetFont(const char* fontFilePath, bool bold, bool italic)
 			}
 		);
 
-	if (m_fillFont.get() == nullptr)return false;
+	if (m_fillFont == nullptr)return false;
 
 	m_outlineFont = std::shared_ptr<TTF_Font>
 		(
@@ -106,7 +106,7 @@ bool CSdlMainWindow::SetFont(const char* fontFilePath, bool bold, bool italic)
 	return true;
 }
 
-void CSdlMainWindow::SetScenarioData(std::vector<adv::TextDatum>& textData, std::vector<std::string>& animationNames)
+void CSdlMainWindow::setScenarioData(std::vector<adv::TextDatum>& textData, std::vector<std::string>& animationNames)
 {
 	m_textData = std::move(textData);
 	m_nTextIndex = 0;
@@ -115,9 +115,9 @@ void CSdlMainWindow::SetScenarioData(std::vector<adv::TextDatum>& textData, std:
 	m_nLastAnimationIndex = 0;
 }
 
-int CSdlMainWindow::Display()
+int CSdlMainWindow::display()
 {
-	ResetSpinePlayerScale();
+	resetSpinePlayerScale();
 	::SDL_ShowWindow(m_window.get());
 
 	m_pBgPlayer = std::make_unique<CMfMediaPlayer>();
@@ -132,8 +132,8 @@ int CSdlMainWindow::Display()
 
 	SDL_FPoint mouseStartPos{};
 
-	m_spineClock.Restart();
-	m_textClock.Restart();
+	m_spineClock.restart();
+	m_textClock.restart();
 	while (!toBeQuit)
 	{
 		SDL_Event event;
@@ -148,12 +148,12 @@ int CSdlMainWindow::Display()
 				switch (event.key.scancode)
 				{
 				case SDL_SCANCODE_LEFT:
-					ShiftMessageText(false);
+					shiftMessageText(false);
 					break;
 				case SDL_SCANCODE_RIGHT:
 					if (m_nTextIndex < m_textData.size() - 1)
 					{
-						ShiftMessageText(true);
+						shiftMessageText(true);
 					}
 					break;
 				default:
@@ -166,23 +166,23 @@ int CSdlMainWindow::Display()
 				case SDL_SCANCODE_A:
 					if (m_sdlSpinePlayer.get() != nullptr)
 					{
-						m_sdlSpinePlayer->TogglePma();
+						m_sdlSpinePlayer->togglePma();
 					}
 					break;
 				case SDL_SCANCODE_B:
 					if (m_sdlSpinePlayer.get() != nullptr)
 					{
-						m_sdlSpinePlayer->ToggleBlendMode();
+						m_sdlSpinePlayer->toggleBlendMode();
 					}
 					break;
 				case SDL_SCANCODE_C:
-					ToggleTextColour();
+					toggleTextColour();
 					break;
 				case SDL_SCANCODE_S:
 
 					break;
 				case SDL_SCANCODE_T:
-					ToggleTextVisibility();
+					toggleTextVisibility();
 					break;
 				case SDL_SCANCODE_ESCAPE:
 					toBeQuit = true;
@@ -235,7 +235,7 @@ int CSdlMainWindow::Display()
 						{
 							if (iX == 0 && iY == 0 && m_animationNames.empty())
 							{
-								m_sdlSpinePlayer->ShiftAnimation();
+								m_sdlSpinePlayer->shiftAnimation();
 							}
 						}
 
@@ -244,7 +244,7 @@ int CSdlMainWindow::Display()
 				}
 				else if (event.button.button == SDL_BUTTON_MIDDLE)
 				{
-					ResetSpinePlayerScale();
+					resetSpinePlayerScale();
 				}
 				break;
 			case SDL_EVENT_MOUSE_MOTION:
@@ -257,7 +257,7 @@ int CSdlMainWindow::Display()
 					{
 						int iX = static_cast<int>(mouseStartPos.x - mousePos.x);
 						int iY = static_cast<int>(mouseStartPos.y - mousePos.y);
-						m_sdlSpinePlayer->MoveViewPoint(iX, iY);
+						m_sdlSpinePlayer->addOffset(iX, iY);
 
 						mouseStartPos = mousePos;
 
@@ -275,19 +275,19 @@ int CSdlMainWindow::Display()
 					{
 						constexpr float kTimeScalePortion = 0.05f;
 
-						float timeScale = m_sdlSpinePlayer->GetTimeScale();
+						float timeScale = m_sdlSpinePlayer->getTimeScale();
 						(event.wheel.y < 0) ?
 							timeScale += kTimeScalePortion :
 							timeScale -= kTimeScalePortion;
 						if (timeScale < 0.f)timeScale = 0.f;
-						m_sdlSpinePlayer->SetTimeScale(timeScale);
+						m_sdlSpinePlayer->setTimeScale(timeScale);
 
 						wasLeftCombinated = true;
 					}
 				}
 				else if (uiButtonState & SDL_BUTTON_MASK(SDL_BUTTON_RIGHT))
 				{
-					ShiftMessageText(event.wheel.y < 0);
+					shiftMessageText(event.wheel.y < 0);
 				}
 				else
 				{
@@ -296,25 +296,25 @@ int CSdlMainWindow::Display()
 						static constexpr float kScalePortion = 0.025f;
 						static constexpr float kMinScale = 0.15f;
 
-						float skeletonScale = m_sdlSpinePlayer->GetSkeletonScale();
+						float skeletonScale = m_sdlSpinePlayer->getSkeletonScale();
 						(event.wheel.y < 0) ?
 							skeletonScale += kScalePortion :
 							skeletonScale -= kScalePortion;
 						if (skeletonScale < kMinScale)skeletonScale = kMinScale;
-						m_sdlSpinePlayer->SetSkeletonScale(skeletonScale);
+						m_sdlSpinePlayer->setSkeletonScale(skeletonScale);
 
 						int nKeyCount = 0;
 						const bool* pKeyboardState = ::SDL_GetKeyboardState(&nKeyCount);
 						if (1 || nKeyCount > SDL_SCANCODE_LCTRL && pKeyboardState[SDL_SCANCODE_LCTRL] == false)
 						{
-							float canvasScale = m_sdlSpinePlayer->GetCanvasScale();
+							float canvasScale = m_sdlSpinePlayer->getCanvasScale();
 							(event.wheel.y < 0) ?
 								canvasScale += kScalePortion :
 								canvasScale -= kScalePortion;
 							if (canvasScale < kMinScale)canvasScale = kMinScale;
-							m_sdlSpinePlayer->SetCanvasScale(canvasScale);
+							m_sdlSpinePlayer->setCanvasScale(canvasScale);
 
-							//ResizeWindow();
+							//resizeWindow();
 						}
 					}
 				}
@@ -325,15 +325,15 @@ int CSdlMainWindow::Display()
 			}
 		}
 
-		float deltaTime = m_spineClock.GetElapsedTime();
-		m_sdlSpinePlayer->Update(deltaTime);
-		m_spineClock.Restart();
+		float deltaTime = m_spineClock.getElapsedTime();
+		m_sdlSpinePlayer->update(deltaTime);
+		m_spineClock.restart();
 
 		::SDL_RenderClear(m_renderer.get());
 
-		m_sdlSpinePlayer->Redraw();
+		m_sdlSpinePlayer->redraw();
 
-		RenderText(FormatMessageText());
+		renderText(formatMessageText());
 
 		::SDL_RenderPresent(m_renderer.get());
 
@@ -353,23 +353,23 @@ int CSdlMainWindow::Display()
 			::SDL_SetWindowPosition(m_window.get(), windowPosToBe.x, windowPosToBe.y);
 		}
 
-		CheckTimer();
+		checkTimer();
 	}
 
 	return iRet;
 }
 
-void CSdlMainWindow::ResizeWindow()
+void CSdlMainWindow::resizeWindow()
 {
 	if (m_sdlSpinePlayer.get())
 	{
-		SDL_FPoint fBaseSize = m_sdlSpinePlayer->GetBaseSize();
-		float fScale = m_sdlSpinePlayer->GetCanvasScale();
+		SDL_FPoint fBaseSize = m_sdlSpinePlayer->getBaseSize();
+		float fScale = m_sdlSpinePlayer->getCanvasScale();
 		::SDL_SetWindowSize(m_window.get(), static_cast<int>(fBaseSize.x * fScale), static_cast<int>(fBaseSize.y * fScale));
 	}
 }
 
-bool CSdlMainWindow::SaveCurrentFrameImage()
+bool CSdlMainWindow::saveCurrentFrameImage()
 {
 	if (m_sdlSpinePlayer == nullptr)return false;
 
@@ -379,20 +379,20 @@ bool CSdlMainWindow::SaveCurrentFrameImage()
 			const char* pBasePath = ::SDL_GetBasePath();
 			if (pBasePath == nullptr)return {};
 
-			const char* pAnimationName = m_sdlSpinePlayer->GetCurrentAnimationName();
+			const char* pAnimationName = m_sdlSpinePlayer->getCurrentAnimationName();
 			if (pAnimationName == nullptr)return {};
 
 			float fTrackTime = 0.f;
-			m_sdlSpinePlayer->GetCurrentAnimationTime(&fTrackTime, nullptr, nullptr, nullptr);
+			m_sdlSpinePlayer->getCurrentAnimationTime(&fTrackTime, nullptr, nullptr, nullptr);
 
 			std::string strPath = pBasePath;
 #ifdef _WIN32
-			strPath += u8"\\";
+			strPath += '\\';
 #else
-			strPath += u8"/";
+			strPath += '/';
 #endif
 			char sBuffer[16]{};
-			::SDL_snprintf(sBuffer, sizeof(sBuffer) -1, u8"_%.3f.png", fTrackTime);
+			::SDL_snprintf(sBuffer, sizeof(sBuffer) -1, "_%.3f.png", fTrackTime);
 			strPath += pAnimationName;
 			strPath += sBuffer;
 
@@ -406,7 +406,7 @@ bool CSdlMainWindow::SaveCurrentFrameImage()
 	::SDL_GetWindowSize(m_window.get(), &windowRect.w, &windowRect.h);
 
 	constexpr const char slotName[] = "BG";
-	SDL_FRect slotRect = m_sdlSpinePlayer->GetCurrentBoundingOfSlot(slotName, sizeof(slotName) - 1);
+	SDL_FRect slotRect = m_sdlSpinePlayer->getCurrentBoundingOfSlot(slotName, sizeof(slotName) - 1);
 
 	auto pSurface = std::unique_ptr<SDL_Surface, decltype(&::SDL_DestroySurface)>
 		(
@@ -418,16 +418,16 @@ bool CSdlMainWindow::SaveCurrentFrameImage()
 	return ::IMG_SavePNG(pSurface.get(), strFilePath.c_str());
 }
 
-void CSdlMainWindow::ResetSpinePlayerScale()
+void CSdlMainWindow::resetSpinePlayerScale()
 {
 	if (m_sdlSpinePlayer.get() != nullptr)
 	{
 		m_sdlSpinePlayer->ResetScale();
-		ResizeWindow();
+		resizeWindow();
 	}
 }
 /*表示文章移行*/
-void CSdlMainWindow::ShiftMessageText(bool forward)
+void CSdlMainWindow::shiftMessageText(bool forward)
 {
 	if (m_textData.empty())return;
 
@@ -441,10 +441,10 @@ void CSdlMainWindow::ShiftMessageText(bool forward)
 		--m_nTextIndex;
 		if (m_nTextIndex >= m_textData.size())m_nTextIndex = m_textData.size() - 1;
 	}
-	UpdateMessageText();
+	updateMessageText();
 }
 
-void CSdlMainWindow::UpdateMessageText()
+void CSdlMainWindow::updateMessageText()
 {
 	if (m_nTextIndex >= m_textData.size())return;
 
@@ -456,7 +456,7 @@ void CSdlMainWindow::UpdateMessageText()
 		if (textDatum.nAnimationIndex < m_animationNames.size())
 		{
 			m_nLastAnimationIndex = textDatum.nAnimationIndex;
-			m_sdlSpinePlayer->SetAnimationByName(m_animationNames[m_nLastAnimationIndex].c_str());
+			m_sdlSpinePlayer->setAnimationByName(m_animationNames[m_nLastAnimationIndex].c_str());
 		}
 	}
 
@@ -472,10 +472,10 @@ void CSdlMainWindow::UpdateMessageText()
 			m_voicePlayer.Play(wstrVoicePath.c_str());
 		}
 	}
-	m_textClock.Restart();
+	m_textClock.restart();
 }
 /*表示文章作成*/
-std::string CSdlMainWindow::FormatMessageText()
+std::string CSdlMainWindow::formatMessageText()
 {
 	if (m_nTextIndex >= m_textData.size())return {};
 
@@ -485,23 +485,23 @@ std::string CSdlMainWindow::FormatMessageText()
 
 	/* size_t is 20 digits at most. */
 	char sBuffer[64]{};
-	::SDL_snprintf(sBuffer, sizeof(sBuffer) - 1, u8"%zu/%zu", m_nTextIndex + 1, m_textData.size());
+	::SDL_snprintf(sBuffer, sizeof(sBuffer) - 1, "%zu/%zu", m_nTextIndex + 1, m_textData.size());
 	str += sBuffer;
 	return str;
 }
 /*文字色切り替え*/
-void CSdlMainWindow::ToggleTextColour()
+void CSdlMainWindow::toggleTextColour()
 {
 	m_isTextColourReversed ^= true;
 }
-void CSdlMainWindow::ToggleTextVisibility()
+void CSdlMainWindow::toggleTextVisibility()
 {
 	m_isTextHidden ^= true;
 }
 /*文章描き出し*/
-void CSdlMainWindow::RenderText(const std::string& str, int iPosX, int iPosY)
+void CSdlMainWindow::renderText(const std::string& str, int iPosX, int iPosY)
 {
-	if (m_fillFont.get() == nullptr || m_outlineFont.get() == nullptr)return;
+	if (m_fillFont == nullptr || m_outlineFont == nullptr)return;
 
 	const SDL_Color kWhite = SDL_Color{ 0xff, 0xff, 0xff, 0xff };
 	const SDL_Color kBlack = SDL_Color{ 0x00, 0x00, 0x00, 0xff };
@@ -544,15 +544,15 @@ void CSdlMainWindow::RenderText(const std::string& str, int iPosX, int iPosY)
 	::SDL_RenderTexture(m_renderer.get(), pFilledTexture.get(), nullptr, &textRect);
 }
 
-void CSdlMainWindow::CheckTimer()
+void CSdlMainWindow::checkTimer()
 {
 	constexpr float fAutoPlayInterval = 3.f;
-	float fSecond = m_textClock.GetElapsedTime();
+	float fSecond = m_textClock.getElapsedTime();
 	if (m_voicePlayer.IsEnded() && fSecond > fAutoPlayInterval)
 	{
 		if (m_nTextIndex < m_textData.size() - 1)
 		{
-			ShiftMessageText(true);
+			shiftMessageText(true);
 		}
 	}
 }

@@ -8,11 +8,6 @@
 
 #include "sdl_spine.h"
 
-spine::SpineExtension* spine::getDefaultExtension()
-{
-	return new DefaultSpineExtension();
-}
-
 /* Taken from SDL_render.c */
 #define SDL_COMPOSE_BLENDMODE(srcColorFactor, dstColorFactor, colorOperation, \
 							  srcAlphaFactor, dstAlphaFactor, alphaOperation) \
@@ -75,21 +70,16 @@ struct SdlSpineBlendMode
 	);
 };
 
-CSdlSpineDrawable::CSdlSpineDrawable(spine::SkeletonData* pSkeletonData, spine::AnimationStateData* pAnimationStateData)
+CSdlSpineDrawable::CSdlSpineDrawable(spine::SkeletonData* pSkeletonData)
 {
 	if (pSkeletonData == nullptr)return;
 
 	spine::Bone::setYDown(true);
 	m_sdlVertices.ensureCapacity(128);
 
-	skeleton = new spine::Skeleton(pSkeletonData);
-
-	if (pAnimationStateData == nullptr)
-	{
-		pAnimationStateData = new spine::AnimationStateData(pSkeletonData);
-		m_hasOwnAnimationStateData = true;
-	}
-	animationState = new spine::AnimationState(pAnimationStateData);
+	m_skeleton = new spine::Skeleton(pSkeletonData);
+	spine::AnimationStateData* pAnimationStateData = new spine::AnimationStateData(pSkeletonData);
+	m_animationState = new spine::AnimationState(pAnimationStateData);
 
 	m_quadIndices.add(0);
 	m_quadIndices.add(1);
@@ -101,68 +91,76 @@ CSdlSpineDrawable::CSdlSpineDrawable(spine::SkeletonData* pSkeletonData, spine::
 
 CSdlSpineDrawable::~CSdlSpineDrawable()
 {
-	if (animationState != nullptr)
+	if (m_animationState != nullptr)
 	{
-		if (m_hasOwnAnimationStateData)
-		{
-			delete animationState->getData();
-		}
+		spine::AnimationStateData* pAnimationStateData = m_animationState->getData();
+		delete pAnimationStateData;
 
-		delete animationState;
+		delete m_animationState;
 	}
-	if (skeleton != nullptr)
+	if (m_skeleton != nullptr)
 	{
-		delete skeleton;
+		delete m_skeleton;
 	}
 }
 
-void CSdlSpineDrawable::PremultiplyAlpha(bool toPremultiply)
+spine::Skeleton* CSdlSpineDrawable::skeleton() const
+{
+	return m_skeleton;
+}
+
+spine::AnimationState* CSdlSpineDrawable::animationState() const
+{
+	return m_animationState;
+}
+
+void CSdlSpineDrawable::premultiplyAlpha(bool toPremultiply)
 {
 	m_isAlphaPremultiplied = toPremultiply;
 }
 
-bool CSdlSpineDrawable::IsAlphaPremultiplied() const
+bool CSdlSpineDrawable::isAlphaPremultiplied() const
 {
 	return m_isAlphaPremultiplied;
 }
 
-void CSdlSpineDrawable::ForceBlendModeNormal(bool toForce)
+void CSdlSpineDrawable::forceBlendModeNormal(bool toForce)
 {
 	m_toForceBlendModeNormal = toForce;
 }
 
-bool CSdlSpineDrawable::IsBlendModeNormalForced() const
+bool CSdlSpineDrawable::isBlendModeNormalForced() const
 {
 	return m_toForceBlendModeNormal;
 }
 
-void CSdlSpineDrawable::Update(float fDelta)
+void CSdlSpineDrawable::update(float fDelta)
 {
-	if (skeleton != nullptr && animationState != nullptr)
+	if (m_skeleton != nullptr && m_animationState != nullptr)
 	{
 #ifndef SPINE_4_1_OR_LATER
-		skeleton->update(fDelta);
+		m_skeleton->update(fDelta);
 #endif
-		animationState->update(fDelta);
-		animationState->apply(*skeleton);
+		m_animationState->update(fDelta);
+		m_animationState->apply(*m_skeleton);
 #ifdef SPINE_4_2_OR_LATER
-		skeleton->update(fDelta);
-		skeleton->updateWorldTransform(spine::Physics::Physics_Update);
+		m_skeleton->update(fDelta);
+		m_skeleton->updateWorldTransform(spine::Physics::Physics_Update);
 #else
-		skeleton->updateWorldTransform();
+		m_skeleton->updateWorldTransform();
 #endif
 	}
 }
 
-void CSdlSpineDrawable::Draw(float fOffsetX, float fOffsetY)
+void CSdlSpineDrawable::draw(float fOffsetX, float fOffsetY)
 {
-	if (skeleton == nullptr || animationState == nullptr)return;
+	if (m_skeleton == nullptr || m_animationState == nullptr)return;
 
-	if (skeleton->getColor().a == 0) return;
+	if (m_skeleton->getColor().a == 0) return;
 
-	for (size_t i = 0; i < skeleton->getSlots().size(); ++i)
+	for (size_t i = 0; i < m_skeleton->getSlots().size(); ++i)
 	{
-		spine::Slot& slot = *skeleton->getDrawOrder()[i];
+		spine::Slot& slot = *m_skeleton->getDrawOrder()[i];
 		spine::Attachment* pAttachment = slot.getAttachment();
 		if (!pAttachment)
 		{
@@ -176,7 +174,7 @@ void CSdlSpineDrawable::Draw(float fOffsetX, float fOffsetY)
 			continue;
 		}
 
-		if (IsSlotToBeLeftOut(slot.getData().getName()))
+		if (isSlotToBeLeftOut(slot.getData().getName()))
 		{
 			m_clipper.clipEnd(slot);
 			continue;
@@ -284,10 +282,10 @@ void CSdlSpineDrawable::Draw(float fOffsetX, float fOffsetY)
 
 		const spine::Color tint
 		{
-			skeleton->getColor().r * slot.getColor().r * pAttachmentColor->r,
-			skeleton->getColor().g * slot.getColor().g * pAttachmentColor->g,
-			skeleton->getColor().b * slot.getColor().b * pAttachmentColor->b,
-			skeleton->getColor().a * slot.getColor().a * pAttachmentColor->a,
+			m_skeleton->getColor().r * slot.getColor().r * pAttachmentColor->r,
+			m_skeleton->getColor().g * slot.getColor().g * pAttachmentColor->g,
+			m_skeleton->getColor().b * slot.getColor().b * pAttachmentColor->b,
+			m_skeleton->getColor().a * slot.getColor().a * pAttachmentColor->a,
 		};
 
 		m_sdlVertices.clear();
@@ -345,37 +343,37 @@ void CSdlSpineDrawable::Draw(float fOffsetX, float fOffsetY)
 	m_clipper.clipEnd();
 }
 
-void CSdlSpineDrawable::SetLeaveOutList(spine::Vector<spine::String>& list)
+void CSdlSpineDrawable::setLeaveOutList(spine::Vector<spine::String>& list)
 {
 	/*There are some slots having mask or nuisance effect; exclude them from rendering.*/
 	m_leaveOutList.clearAndAddAll(list);
 }
 
-SDL_FRect CSdlSpineDrawable::GetBoundingBox() const
+SDL_FRect CSdlSpineDrawable::getBoundingBox() const
 {
 	SDL_FRect boundingBox{};
 
-	if (skeleton != nullptr)
+	if (m_skeleton != nullptr)
 	{
 		spine::Vector<float> tempVertices;
-		skeleton->getBounds(boundingBox.x, boundingBox.y, boundingBox.w, boundingBox.h, tempVertices);
+		m_skeleton->getBounds(boundingBox.x, boundingBox.y, boundingBox.w, boundingBox.h, tempVertices);
 	}
 
 	return boundingBox;
 }
 
-SDL_FRect CSdlSpineDrawable::GetBoundingBoxOfSlot(const char* slotName, size_t nameLength, bool* found) const
+SDL_FRect CSdlSpineDrawable::getBoundingBoxOfSlot(const char* slotName, size_t nameLength, bool* found) const
 {
 	float fMinX = FLT_MAX;
 	float fMinY = FLT_MAX;
 	float fMaxX = -FLT_MAX;
 	float fMaxY = -FLT_MAX;
 
-	if (skeleton != nullptr)
+	if (m_skeleton != nullptr)
 	{
-		for (size_t i = 0; i < skeleton->getSlots().size(); ++i)
+		for (size_t i = 0; i < m_skeleton->getSlots().size(); ++i)
 		{
-			spine::Slot& slot = *skeleton->getDrawOrder()[i];
+			spine::Slot& slot = *m_skeleton->getDrawOrder()[i];
 			const spine::String& slotDataName = slot.getData().getName();
 			if (nameLength != slotDataName.length())continue;
 
@@ -428,7 +426,7 @@ SDL_FRect CSdlSpineDrawable::GetBoundingBoxOfSlot(const char* slotName, size_t n
 	return SDL_FRect{ fMinX, fMinY, fMaxX - fMinX, fMaxY - fMinY };
 }
 
-bool CSdlSpineDrawable::IsSlotToBeLeftOut(const spine::String& slotName)
+bool CSdlSpineDrawable::isSlotToBeLeftOut(const spine::String& slotName)
 {
 	if (m_pLeaveOutCallback != nullptr)
 	{
@@ -443,7 +441,7 @@ bool CSdlSpineDrawable::IsSlotToBeLeftOut(const spine::String& slotName)
 }
 
 
-void CSdlTextureLoader::SetRenderer(SDL_Renderer* pSdlRenderer)
+void CSdlTextureLoader::setRenderer(SDL_Renderer* pSdlRenderer)
 {
 	m_pSdlRenderer = pSdlRenderer;
 }

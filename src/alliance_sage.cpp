@@ -37,10 +37,8 @@ namespace alliance_sage
 	template <typename CharType, size_t sizeOld, size_t sizeNew>
 	void ReplaceAll(std::basic_string<CharType>& src, const CharType(&strOld)[sizeOld], const CharType(&strNew)[sizeNew])
 	{
-		const size_t lenOld = sizeOld - 1;
-		const size_t lenNew = sizeNew - 1;
-
-		if (lenOld == 0) return;
+		constexpr size_t lenOld = sizeOld - 1;
+		constexpr size_t lenNew = sizeNew - 1;
 
 		for (size_t nPos = 0;;)
 		{
@@ -50,6 +48,26 @@ namespace alliance_sage
 			nPos += lenNew;
 		}
 	}
+#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || (defined(__cplusplus) && __cplusplus >= 202002L)
+	template <size_t sizeOld, size_t sizeNew>
+	void ReplaceAll(std::string& src, const char8_t(&strOld)[sizeOld], const char8_t(&strNew)[sizeNew])
+	{
+		constexpr size_t lenOld = sizeOld - 1;
+		constexpr size_t lenNew = sizeNew - 1;
+
+		const char* pOld = reinterpret_cast<const char*>(strOld);
+		const char* pNew = reinterpret_cast<const char*>(strNew);
+
+		for (size_t nPos = 0;;)
+		{
+			nPos = src.find(pOld, nPos, lenOld);
+			if (nPos == std::string::npos) break;
+
+			src.replace(nPos, lenOld, pNew, lenNew);
+			nPos += lenNew;
+		}
+	}
+#endif
 }
 
 bool alliance_sage::LoadScenario(const std::wstring& wstrFilePath, std::vector<adv::TextDatum>& textData, std::vector<std::string>& spineFilePaths, std::vector<std::string>& animationNames)
@@ -133,13 +151,13 @@ bool alliance_sage::LoadScenario(const std::wstring& wstrFilePath, std::vector<a
 			if (!nameBuffer.empty())
 			{
 				t.strText = nameBuffer;
-				t.strText += u8": \n";
+				t.strText += ": \n";
 			}
 
 			t.strText += msgBuffer;
 			ReplaceAll(t.strText, u8"<name>", u8"俺");
-			ReplaceAll(t.strText, u8"\\r", u8"");
-			ReplaceAll(t.strText, u8"\\n", u8"\n");
+			ReplaceAll(t.strText, "\\r", "");
+			ReplaceAll(t.strText, "\\n", "\n");
 			if (!cvBuffer.empty())
 			{
 				t.wstrVoicePath = std::wstring(wstrBaseFolderPath).append(L"cv\\").append(win_text::WidenUtf8(cvBuffer)).append(L".m4a");

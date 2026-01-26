@@ -6,7 +6,7 @@ CSdlSpinePlayer::CSdlSpinePlayer(SDL_Window* pSdlWindow, SDL_Renderer* pSdlRende
 	:m_pSdlWindow(pSdlWindow), m_pSdlRenderer(pSdlRenderer)
 {
 #ifdef SDL_SPINE_CPP
-	m_textureLoader.SetRenderer(pSdlRenderer);
+	m_textureLoader.setRenderer(pSdlRenderer);
 #endif
 }
 
@@ -15,7 +15,7 @@ CSdlSpinePlayer::~CSdlSpinePlayer()
 
 }
 /*再描画*/
-void CSdlSpinePlayer::Redraw()
+void CSdlSpinePlayer::redraw()
 {
 	float fX = 0.f;
 	float fY = 0.f;
@@ -34,22 +34,22 @@ void CSdlSpinePlayer::Redraw()
 	/* For usual case, use SDL's scale. */
 	for (const auto& drawble : m_drawables)
 	{
-		drawble->skeleton->setScaleX(m_fSkeletonScale);
-		drawble->skeleton->setScaleY(m_fSkeletonScale);
+		drawble->skeleton()->setScaleX(m_fSkeletonScale);
+		drawble->skeleton()->setScaleY(m_fSkeletonScale);
 	}
 
 	if (!m_isDrawOrderReversed)
 	{
 		for (size_t i = 0; i < m_drawables.size(); ++i)
 		{
-			m_drawables[i]->Draw(-fX, -fY);
+			m_drawables[i]->draw(-fX, -fY);
 		}
 	}
 	else
 	{
 		for(long long i = m_drawables.size() - 1; i >= 0;--i)
 		{
-			m_drawables[i]->Draw(-fX, -fY);
+			m_drawables[i]->draw(-fX, -fY);
 		}
 	}
 
@@ -59,12 +59,12 @@ void CSdlSpinePlayer::Redraw()
 	//}
 }
 
-SDL_FRect CSdlSpinePlayer::GetCurrentBoundingOfSlot(const char* slotName, size_t nameLength) const
+SDL_FRect CSdlSpinePlayer::getCurrentBoundingOfSlot(const char* slotName, size_t nameLength) const
 {
 	bool found = false;
 	for (const auto& drawable : m_drawables)
 	{
-		const auto& rect = drawable->GetBoundingBoxOfSlot(slotName, nameLength, &found);
+		const auto& rect = drawable->getBoundingBoxOfSlot(slotName, nameLength, &found);
 		if (found)
 		{
 			return rect;
@@ -73,7 +73,7 @@ SDL_FRect CSdlSpinePlayer::GetCurrentBoundingOfSlot(const char* slotName, size_t
 	return {};
 }
 /*初期尺度算出*/
-void CSdlSpinePlayer::WorkOutDefaultScale()
+void CSdlSpinePlayer::workOutDefaultScale()
 {
 	/*
 	* The following calculation is game-specific measure to adapt to its too long height. 
@@ -119,7 +119,7 @@ void CSdlSpinePlayer::WorkOutDefaultScale()
 	//}
 }
 
-void CSdlSpinePlayer::WorkOutDefaultOffset()
+void CSdlSpinePlayer::workOutDefaultOffset()
 {
 	//m_fDefaultOffset = {};
 
@@ -128,7 +128,7 @@ void CSdlSpinePlayer::WorkOutDefaultOffset()
 
 	//for (const auto& pDrawable : m_drawables)
 	//{
-	//	const auto& rect = pDrawable->GetBoundingBox();
+	//	const auto& rect = pDrawable->getBoundingBox();
 	//	fMinX = (std::min)(fMinX, rect.x);
 	//	fMinY = (std::min)(fMinY, rect.y);
 	//}

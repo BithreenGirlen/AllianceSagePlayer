@@ -25,15 +25,15 @@ public:
 	CSdlMainWindow(const char* windowName, EBackEnd eBackEnd = EBackEnd::kDirectX, bool transparent = false);
 	~CSdlMainWindow();
 
-	bool SetSpineFromFile(const std::vector<std::string>& atlasPaths, const std::vector<std::string>& skelPaths, bool isBinarySkel);
+	bool setSpineFromFile(const std::vector<std::string>& atlasFilePaths, const std::vector<std::string>& skelFilePaths);
 
-	void SetSlotsToExclude(const std::vector<std::string>& slotNames);
-	void SetSlotExclusionCallback(bool (*pFunc)(const char*, size_t));
+	void setSlotsToExclude(const std::vector<std::string>& slotNames);
+	void setSlotExclusionCallback(bool (*pFunc)(const char*, size_t));
 
-	bool SetFont(const char* fontFilePath, bool bold = false, bool italic = false);
-	void SetScenarioData(std::vector<adv::TextDatum>& textData, std::vector<std::string>& animationNames);
+	bool setFont(const char* fontFilePath, bool bold = false, bool italic = false);
+	void setScenarioData(std::vector<adv::TextDatum>& textData, std::vector<std::string>& animationNames);
 
-	int Display();
+	int display();
 private:
 	enum EFontSize { kOutLineSize = 1, kFillSize = 32 };
 
@@ -43,11 +43,11 @@ private:
 	std::unique_ptr<CSdlSpinePlayer> m_sdlSpinePlayer;
 	CSdlClock m_spineClock;
 
-	void ResizeWindow();
+	void resizeWindow();
 
-	bool SaveCurrentFrameImage();
+	bool saveCurrentFrameImage();
 
-	void ResetSpinePlayerScale();
+	void resetSpinePlayerScale();
 
 	std::shared_ptr<TTF_Font> m_fillFont;
 	std::shared_ptr<TTF_Font> m_outlineFont;
@@ -64,15 +64,15 @@ private:
 	CMfMediaPlayer m_voicePlayer;
 	CSdlClock m_textClock;
 
-	void ShiftMessageText(bool forward);
-	void UpdateMessageText();
-	std::string FormatMessageText();
+	void shiftMessageText(bool forward);
+	void updateMessageText();
+	std::string formatMessageText();
 
-	void ToggleTextColour();
-	void ToggleTextVisibility();
+	void toggleTextColour();
+	void toggleTextVisibility();
 
-	void RenderText(const std::string& str, int iPosX = 0, int iPosY = 0);
+	void renderText(const std::string& str, int iPosX = 0, int iPosY = 0);
 
-	void CheckTimer();
+	void checkTimer();
 };
 #endif // !SDL_MAIN_WINDOW_H_
