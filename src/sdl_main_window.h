@@ -16,18 +16,17 @@
 class CSdlMainWindow
 {
 public:
-	enum class EBackEnd
+	enum class EBackend
 	{
 		kDirectX = 0,
 		kOpenGL,
 		kVulkan
 	};
-	CSdlMainWindow(const char* windowName, EBackEnd eBackEnd = EBackEnd::kDirectX, bool transparent = false);
+	CSdlMainWindow(const char* windowName, EBackend eBackEnd = EBackend::kDirectX, bool transparent = false);
 	~CSdlMainWindow();
 
 	bool setSpineFromFile(const std::vector<std::string>& atlasFilePaths, const std::vector<std::string>& skelFilePaths);
 
-	void setSlotsToExclude(const std::vector<std::string>& slotNames);
 	void setSlotExclusionCallback(bool (*pFunc)(const char*, size_t));
 
 	bool setFont(const char* fontFilePath, bool bold = false, bool italic = false);
@@ -36,21 +35,25 @@ public:
 	int display();
 private:
 	enum EFontSize { kOutLineSize = 1, kFillSize = 32 };
+	static constexpr float kScaleDelta = 0.01f;
 
-	std::shared_ptr<SDL_Window> m_window;
-	std::shared_ptr<SDL_Renderer> m_renderer;
+	std::unique_ptr<SDL_Window, decltype(&::SDL_DestroyWindow)> m_window{ nullptr, ::SDL_DestroyWindow};
+	std::unique_ptr<SDL_Renderer, decltype(&::SDL_DestroyRenderer)> m_renderer{nullptr, ::SDL_DestroyRenderer };
 
 	std::unique_ptr<CSdlSpinePlayer> m_sdlSpinePlayer;
 	CSdlClock m_spineClock;
+
+	std::unique_ptr<SDL_Texture, decltype(&::SDL_DestroyTexture)> m_spineTexture {nullptr, ::SDL_DestroyTexture };
 
 	void resizeWindow();
 
 	bool saveCurrentFrameImage();
 
 	void resetSpinePlayerScale();
+	void setSpinePlayerSize();
 
-	std::shared_ptr<TTF_Font> m_fillFont;
-	std::shared_ptr<TTF_Font> m_outlineFont;
+	std::unique_ptr<TTF_Font, decltype(&::TTF_CloseFont)> m_fillFont { nullptr, ::TTF_CloseFont };
+	std::unique_ptr<TTF_Font, decltype(&::TTF_CloseFont)> m_outlineFont{ nullptr, ::TTF_CloseFont };
 	bool m_isTextColourReversed = false;
 	bool m_isTextHidden = false;
 

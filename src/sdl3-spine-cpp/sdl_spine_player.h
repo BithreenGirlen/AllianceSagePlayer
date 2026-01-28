@@ -12,6 +12,11 @@ public:
 	void redraw();
 
 	SDL_FRect getCurrentBoundingOfSlot(const char* slotName, size_t nameLength) const;
+	template<size_t nameSize>
+	SDL_FRect getCurrentBoundingOfSlot(const char (&slotName)[nameSize]) const
+	{
+		return getCurrentBoundingOfSlot(slotName, nameSize - 1);
+	}
 private:
 	void workOutDefaultScale() override;
 	void workOutDefaultOffset() override;

@@ -1,43 +1,33 @@
 ﻿
+
 #include <SDL3_image/SDL_image.h>
 
 #include "sdl_main_window.h"
 
-CSdlMainWindow::CSdlMainWindow(const char* windowName, EBackEnd eBackEnd, bool transparent)
+CSdlMainWindow::CSdlMainWindow(const char* windowName, EBackend eBackEnd, bool transparent)
 {
-	int iBackEnd = 0;
+	int iBackend = 0;
 	switch (eBackEnd)
 	{
-	case EBackEnd::kOpenGL:
-		iBackEnd = SDL_WINDOW_OPENGL;
+	case EBackend::kOpenGL:
+		iBackend = SDL_WINDOW_OPENGL;
 		break;
-	case EBackEnd::kVulkan:
-		iBackEnd = SDL_WINDOW_VULKAN;
+	case EBackend::kVulkan:
+		iBackend = SDL_WINDOW_VULKAN;
 		break;
 	default:
 		break;
 	}
-	m_window = std::shared_ptr<SDL_Window>
-		(
-			::SDL_CreateWindow(windowName, 200, 200, SDL_WINDOW_HIDDEN | SDL_WINDOW_BORDERLESS | iBackEnd | (transparent ? SDL_WINDOW_TRANSPARENT : 0)),
-			[](SDL_Window* window)
-			{
-				::SDL_DestroyWindow(window);
-			}
-		);
+	m_window.reset(::SDL_CreateWindow(
+		windowName, 200, 200,
+		SDL_WINDOW_HIDDEN | SDL_WINDOW_BORDERLESS | iBackend | (transparent ? SDL_WINDOW_TRANSPARENT : 0))
+	);
 
 	if (m_window == nullptr)return;
 
 	::SDL_SetWindowPosition(m_window.get(), 0, 0);
 
-	m_renderer = std::shared_ptr<SDL_Renderer>
-		(
-			::SDL_CreateRenderer(m_window.get(), nullptr),
-			[](SDL_Renderer* renderer)
-			{
-				::SDL_DestroyRenderer(renderer);
-			}
-		);
+	m_renderer.reset(::SDL_CreateRenderer(m_window.get(), nullptr));
 
 	::SDL_SetRenderVSync(m_renderer.get(), 1);
 
@@ -55,18 +45,22 @@ bool CSdlMainWindow::setSpineFromFile(const std::vector<std::string>& atlasFileP
 {
 	if (m_sdlSpinePlayer != nullptr)
 	{
-		return m_sdlSpinePlayer->loadSpineFromFile(atlasFilePaths, skelFilePaths);
+		bool bRet = m_sdlSpinePlayer->loadSpineFromFile(atlasFilePaths, skelFilePaths);
+		if (bRet)
+		{
+			/* Filename including extension. */
+			size_t nPos = atlasFilePaths[0].find_last_of("\\/");
+			if (nPos == std::string::npos)nPos = 0;
+			::SDL_SetWindowTitle(m_window.get(), &atlasFilePaths[0][nPos]);
+
+			setSpinePlayerSize();
+			m_sdlSpinePlayer->setSlotsToExclude({ "frame", "Frame", "AA", reinterpret_cast<const char*>(u8"出血") });
+
+			return true;
+		}
 	}
 
 	return false;
-}
-
-void CSdlMainWindow::setSlotsToExclude(const std::vector<std::string>& slotNames)
-{
-	if (m_sdlSpinePlayer != nullptr)
-	{
-		m_sdlSpinePlayer->setSlotsToExclude(slotNames);
-	}
 }
 
 void CSdlMainWindow::setSlotExclusionCallback(bool(*pFunc)(const char*, size_t))
@@ -79,25 +73,11 @@ void CSdlMainWindow::setSlotExclusionCallback(bool(*pFunc)(const char*, size_t))
 
 bool CSdlMainWindow::setFont(const char* fontFilePath, bool bold, bool italic)
 {
-	m_fillFont = std::shared_ptr<TTF_Font>
-		(
-			::TTF_OpenFont(fontFilePath, EFontSize::kFillSize),
-			[](TTF_Font* ttfFont)
-			{
-				::TTF_CloseFont(ttfFont);
-			}
-		);
+	m_fillFont.reset(::TTF_OpenFont(fontFilePath, EFontSize::kFillSize));
 
 	if (m_fillFont == nullptr)return false;
 
-	m_outlineFont = std::shared_ptr<TTF_Font>
-		(
-			::TTF_OpenFont(fontFilePath, EFontSize::kFillSize),
-			[](TTF_Font* ttfFont)
-			{
-				::TTF_CloseFont(ttfFont);
-			}
-		);
+	m_outlineFont.reset(::TTF_OpenFont(fontFilePath, EFontSize::kFillSize));
 
 	::TTF_SetFontStyle(m_fillFont.get(), (bold ? TTF_STYLE_BOLD : 0) | (italic ? TTF_STYLE_ITALIC : 0));
 	::TTF_SetFontStyle(m_outlineFont.get(), (bold ? TTF_STYLE_BOLD : 0) | (italic ? TTF_STYLE_ITALIC : 0));
@@ -179,7 +159,7 @@ int CSdlMainWindow::display()
 					toggleTextColour();
 					break;
 				case SDL_SCANCODE_S:
-
+					saveCurrentFrameImage();
 					break;
 				case SDL_SCANCODE_T:
 					toggleTextVisibility();
@@ -268,17 +248,15 @@ int CSdlMainWindow::display()
 			break;
 			case SDL_EVENT_MOUSE_WHEEL:
 			{
+				const float scrollSign = (event.wheel.y < 0 ? 1.f : -1.f);
 				Uint32 uiButtonState = ::SDL_GetMouseState(nullptr, nullptr);
 				if (uiButtonState & SDL_BUTTON_MASK(SDL_BUTTON_LEFT))
 				{
 					if (m_sdlSpinePlayer.get() != nullptr)
 					{
-						constexpr float kTimeScalePortion = 0.05f;
+						constexpr float kTimeScaleDelta = 0.05f;
 
-						float timeScale = m_sdlSpinePlayer->getTimeScale();
-						(event.wheel.y < 0) ?
-							timeScale += kTimeScalePortion :
-							timeScale -= kTimeScalePortion;
+						float timeScale = m_sdlSpinePlayer->getTimeScale() + kTimeScaleDelta * scrollSign;
 						if (timeScale < 0.f)timeScale = 0.f;
 						m_sdlSpinePlayer->setTimeScale(timeScale);
 
@@ -293,28 +271,21 @@ int CSdlMainWindow::display()
 				{
 					if (m_sdlSpinePlayer.get() != nullptr)
 					{
-						static constexpr float kScalePortion = 0.025f;
 						static constexpr float kMinScale = 0.15f;
 
-						float skeletonScale = m_sdlSpinePlayer->getSkeletonScale();
-						(event.wheel.y < 0) ?
-							skeletonScale += kScalePortion :
-							skeletonScale -= kScalePortion;
+						float skeletonScale = m_sdlSpinePlayer->getSkeletonScale() + kScaleDelta * scrollSign;
 						if (skeletonScale < kMinScale)skeletonScale = kMinScale;
 						m_sdlSpinePlayer->setSkeletonScale(skeletonScale);
 
 						int nKeyCount = 0;
 						const bool* pKeyboardState = ::SDL_GetKeyboardState(&nKeyCount);
-						if (1 || nKeyCount > SDL_SCANCODE_LCTRL && pKeyboardState[SDL_SCANCODE_LCTRL] == false)
+						if (nKeyCount > SDL_SCANCODE_LCTRL && pKeyboardState[SDL_SCANCODE_LCTRL] == false)
 						{
-							float canvasScale = m_sdlSpinePlayer->getCanvasScale();
-							(event.wheel.y < 0) ?
-								canvasScale += kScalePortion :
-								canvasScale -= kScalePortion;
+							float canvasScale = m_sdlSpinePlayer->getCanvasScale() + kScaleDelta * scrollSign;
 							if (canvasScale < kMinScale)canvasScale = kMinScale;
 							m_sdlSpinePlayer->setCanvasScale(canvasScale);
 
-							//resizeWindow();
+							resizeWindow();
 						}
 					}
 				}
@@ -331,7 +302,15 @@ int CSdlMainWindow::display()
 
 		::SDL_RenderClear(m_renderer.get());
 
-		m_sdlSpinePlayer->redraw();
+		if (m_spineTexture != nullptr)
+		{
+			::SDL_SetRenderTarget(m_renderer.get(), m_spineTexture.get());
+			::SDL_RenderClear(m_renderer.get());
+			m_sdlSpinePlayer->redraw();
+			::SDL_SetRenderTarget(m_renderer.get(), nullptr);
+
+			::SDL_RenderTexture(m_renderer.get(), m_spineTexture.get(), nullptr, nullptr);
+		}
 
 		renderText(formatMessageText());
 
@@ -361,17 +340,35 @@ int CSdlMainWindow::display()
 
 void CSdlMainWindow::resizeWindow()
 {
-	if (m_sdlSpinePlayer.get())
+	if (m_sdlSpinePlayer != nullptr && m_window != nullptr)
 	{
 		SDL_FPoint fBaseSize = m_sdlSpinePlayer->getBaseSize();
 		float fScale = m_sdlSpinePlayer->getCanvasScale();
-		::SDL_SetWindowSize(m_window.get(), static_cast<int>(fBaseSize.x * fScale), static_cast<int>(fBaseSize.y * fScale));
+
+		SDL_DisplayID displayId = ::SDL_GetDisplayForWindow(m_window.get());
+		if (displayId == 0)return;
+
+		const SDL_DisplayMode* pDisplayMode = ::SDL_GetCurrentDisplayMode(displayId);
+		if (pDisplayMode == nullptr)return;
+
+		int MaxWindowWidth = static_cast<int>(fBaseSize.x * (fScale - kScaleDelta));
+		int MaxwindowHeight = static_cast<int>(fBaseSize.y * (fScale - kScaleDelta));
+
+		if (MaxWindowWidth < pDisplayMode->w || MaxwindowHeight < pDisplayMode->h)
+		{
+			int windowWidth = static_cast<int>(fBaseSize.x * fScale);
+			int windowHeight = static_cast<int>(fBaseSize.y * fScale);
+
+			::SDL_SetWindowSize(m_window.get(), static_cast<int>(fBaseSize.x * fScale), static_cast<int>(fBaseSize.y * fScale));
+
+			m_spineTexture.reset(::SDL_CreateTexture(m_renderer.get(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight));
+		}
 	}
 }
-
+/* This would actually save one frame before I suppose. */
 bool CSdlMainWindow::saveCurrentFrameImage()
 {
-	if (m_sdlSpinePlayer == nullptr)return false;
+	if (m_sdlSpinePlayer == nullptr || m_spineTexture == nullptr)return false;
 
 	const auto GetFilePathToSave = [this]()
 		-> std::string
@@ -386,13 +383,15 @@ bool CSdlMainWindow::saveCurrentFrameImage()
 			m_sdlSpinePlayer->getCurrentAnimationTime(&fTrackTime, nullptr, nullptr, nullptr);
 
 			std::string strPath = pBasePath;
+			strPath += ::SDL_GetWindowTitle(m_window.get());
+			::SDL_CreateDirectory(strPath.c_str());
 #ifdef _WIN32
 			strPath += '\\';
 #else
 			strPath += '/';
 #endif
 			char sBuffer[16]{};
-			::SDL_snprintf(sBuffer, sizeof(sBuffer) -1, "_%.3f.png", fTrackTime);
+			::SDL_snprintf(sBuffer, sizeof(sBuffer) - 1, "_%.3f.png", fTrackTime);
 			strPath += pAnimationName;
 			strPath += sBuffer;
 
@@ -402,18 +401,16 @@ bool CSdlMainWindow::saveCurrentFrameImage()
 	std::string strFilePath = GetFilePathToSave();
 	if (strFilePath.empty())return false;
 
-	SDL_Rect windowRect{};
-	::SDL_GetWindowSize(m_window.get(), &windowRect.w, &windowRect.h);
-
-	constexpr const char slotName[] = "BG";
-	SDL_FRect slotRect = m_sdlSpinePlayer->getCurrentBoundingOfSlot(slotName, sizeof(slotName) - 1);
+	::SDL_SetRenderTarget(m_renderer.get(), m_spineTexture.get());
 
 	auto pSurface = std::unique_ptr<SDL_Surface, decltype(&::SDL_DestroySurface)>
 		(
-			::SDL_RenderReadPixels(m_renderer.get(), &windowRect),
+			::SDL_RenderReadPixels(m_renderer.get(), nullptr),
 			::SDL_DestroySurface
 		);
 	if (pSurface.get() == nullptr)return false;
+
+	::SDL_SetRenderTarget(m_renderer.get(), nullptr);
 
 	return ::IMG_SavePNG(pSurface.get(), strFilePath.c_str());
 }
@@ -423,7 +420,25 @@ void CSdlMainWindow::resetSpinePlayerScale()
 	if (m_sdlSpinePlayer.get() != nullptr)
 	{
 		m_sdlSpinePlayer->ResetScale();
+		m_sdlSpinePlayer->setCanvasScale(m_sdlSpinePlayer->getSkeletonScale() * 0.9f);
+
 		resizeWindow();
+	}
+}
+
+void CSdlMainWindow::setSpinePlayerSize()
+{
+	if (m_sdlSpinePlayer != nullptr)
+	{
+		/*
+		* The first slot, of which name varies though, is the background slot,
+		* and the last one, mostly named "frame", is mask slot.
+		* This applies in most cases, but not always.
+		*/
+
+		m_sdlSpinePlayer->setOffset(0, 0);
+		/* 16: 9 */
+		m_sdlSpinePlayer->setBaseSize(4096.f, 2304.f);
 	}
 }
 /*表示文章移行*/
@@ -534,7 +549,7 @@ void CSdlMainWindow::renderText(const std::string& str, int iPosX, int iPosY)
 
 	if (pFilledTexture.get() == nullptr || pOutlinedTexture.get() == nullptr)return;
 
-	SDL_FRect textRect{ 
+	SDL_FRect textRect{
 		static_cast<float>(iPosX + EFontSize::kOutLineSize),
 		static_cast<float>(iPosY + EFontSize::kOutLineSize),
 		static_cast<float>(pOutlineSurface->w),

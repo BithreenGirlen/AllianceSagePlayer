@@ -71,7 +71,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			return wcsstr(wstr.c_str(), L"memory\\7068.json") != nullptr || wcsstr(wstr.c_str(), L"memory\\7069.json") != nullptr;
 		}), scriptFilePaths.end());
 
-	CSdlMainWindow mainWindow("SDL spine player", CSdlMainWindow::EBackEnd::kDirectX);
+	CSdlMainWindow mainWindow("SDL spine player", CSdlMainWindow::EBackend::kDirectX);
 	mainWindow.setFont("C:\\Windows\\Fonts\\yumin.ttf", true, true);
 
 	for (;;)
@@ -80,7 +80,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		std::vector<std::string> spineFilePaths;
 		std::vector<std::string> animationNames;
 		bRet = alliance_sage::LoadScenario(scriptFilePaths[nFileIndex], textData, spineFilePaths, animationNames);
-		if (!bRet) break;
+		if (!bRet)
+		{
+			::SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to load scenario", nullptr);
+			break;
+		}
 
 		std::vector<std::string> atlasPaths;
 		std::vector<std::string> skelPaths;
@@ -92,9 +96,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 
 		bRet = mainWindow.setSpineFromFile(atlasPaths, skelPaths);
-		if (!bRet)break;
+		if (!bRet)
+		{
+			std::string strError = "Failed to load Spine file";
+			strError.append("\natlas:").append(atlasPaths[0]).append("\nskel: ").append(skelPaths[0]);
 
-		mainWindow.setSlotsToExclude({ "frame" });
+			::SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", strError.c_str(), nullptr);
+			break;
+		}
+
 		mainWindow.setScenarioData(textData, animationNames);
 
 		int iRet = mainWindow.display();

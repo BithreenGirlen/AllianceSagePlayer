@@ -138,13 +138,14 @@ void CSdlSpineDrawable::update(float fDelta)
 {
 	if (m_skeleton != nullptr && m_animationState != nullptr)
 	{
-#ifndef SPINE_4_1_OR_LATER
-		m_skeleton->update(fDelta);
-#endif
 		m_animationState->update(fDelta);
 		m_animationState->apply(*m_skeleton);
-#ifdef SPINE_4_2_OR_LATER
+
+#if !defined(SPINE_4_1_OR_LATER) || defined (SPINE_4_2_OR_LATER)
 		m_skeleton->update(fDelta);
+#endif
+
+#ifdef SPINE_4_2_OR_LATER
 		m_skeleton->updateWorldTransform(spine::Physics::Physics_Update);
 #else
 		m_skeleton->updateWorldTransform();
@@ -152,7 +153,7 @@ void CSdlSpineDrawable::update(float fDelta)
 	}
 }
 
-void CSdlSpineDrawable::draw(float fOffsetX, float fOffsetY)
+void CSdlSpineDrawable::draw(float fScale, float fOffsetX, float fOffsetY)
 {
 	if (m_skeleton == nullptr || m_animationState == nullptr)return;
 
@@ -293,8 +294,8 @@ void CSdlSpineDrawable::draw(float fOffsetX, float fOffsetY)
 		{
 			SDL_Vertex sdlVertex{};
 
-			sdlVertex.position.x = (*pVertices)[ii] + fOffsetX;
-			sdlVertex.position.y = (*pVertices)[ii + 1LL] + fOffsetY;
+			sdlVertex.position.x = (*pVertices)[ii] * fScale + fOffsetX;
+			sdlVertex.position.y = (*pVertices)[ii + 1LL] * fScale + fOffsetY;
 
 			sdlVertex.color.r = tint.r * (m_isAlphaPremultiplied ? tint.a : 1.f);
 			sdlVertex.color.g = tint.g * (m_isAlphaPremultiplied ? tint.a : 1.f);
@@ -405,10 +406,10 @@ SDL_FRect CSdlSpineDrawable::getBoundingBoxOfSlot(const char* slotName, size_t n
 						continue;
 					}
 
-					for (size_t i = 0; i < tempVertices.size(); i += 2)
+					for (size_t ii = 0; ii < tempVertices.size(); ii += 2)
 					{
-						float fX = tempVertices[i];
-						float fY = tempVertices[i + 1LL];
+						float fX = tempVertices[ii];
+						float fY = tempVertices[ii + 1LL];
 
 						fMinX = fMinX < fX ? fMinX : fX;
 						fMinY = fMinY < fY ? fMinY : fY;
@@ -473,17 +474,16 @@ void CSdlTextureLoader::load(spine::AtlasPage& atlasPage, const spine::String& p
 		break;
 	}
 
-	/*In case atlas size does not coincide with that of png, overwriting will collapse the layout.*/
+	/* Do not overwrite the size of atlas page with that of texture because it will collapse uvs. */
 #if 0
 	if (atlasPage.width == 0 || atlasPage.height == 0)
 	{
-		int iWidth = 0;
-		int iHeight = 0;
-		int iRet = ::SDL_QueryTexture(pSdlTexture, nullptr, nullptr, &iWidth, &iHeight);
-		if (iRet == 0)
+		float fWidth = 0, fHeight = 0;
+		bool bRet = ::SDL_GetTextureSize(pSdlTexture, &fWidth, &fHeight);
+		if (bRet)
 		{
-			atlasPage.width = iWidth;
-			atlasPage.height = iHeight;
+			atlasPage.width = static_cast<int>(fWidth);
+			atlasPage.height = static_cast<int>(fHeight);
 		}
 	}
 #endif

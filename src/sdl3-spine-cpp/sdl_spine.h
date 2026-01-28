@@ -20,7 +20,7 @@ public:
 	bool isBlendModeNormalForced() const;
 
 	void update(float fDelta);
-	void draw(float fOffsetX = 0.f, float fOffsetY = 0.f);
+	void draw(float fScale, float fOffsetX = 0.f, float fOffsetY = 0.f);
 
 	void setLeaveOutList(spine::Vector<spine::String>& list);
 	void setLeaveOutCallback(bool (*pFunc)(const char*, size_t)) { m_pLeaveOutCallback = pFunc; }
