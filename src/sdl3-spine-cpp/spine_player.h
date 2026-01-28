@@ -29,7 +29,7 @@ public:
 
 	void update(float fDelta);
 
-	void ResetScale();
+	void resetScale();
 
 	void addOffset(int iX, int iY);
 
@@ -63,14 +63,17 @@ public:
 	/// @param fStart timeline start position.
 	/// @param fEnd timeline end position.
 	void getCurrentAnimationTime(float* fTrack, float* fLast, float* fStart, float* fEnd);
+	float getAnimationDuration(const char* animationName);
 
-	std::vector<std::string> getSlotNames();
+	const std::vector<std::string>& getSlotNames() const;
 	const std::vector<std::string>& getSkinNames() const;
 	const std::vector<std::string>& GetAnimationNames() const;
 
 	void setSlotsToExclude(const std::vector<std::string>& slotNames);
 	void mixSkins(const std::vector<std::string>& skinNames);
-	void mixAnimations(const std::vector<std::string>& animationNames);
+	void addAnimationTracks(const std::vector<std::string>& animationNames, bool loop = false);
+	void mixAnimations(const char* fadeOutAnimationName, const char* fadeInAnimationName, float mixTime);
+	void clearMixedAnimation();
 
 	void setSlotExclusionCallback(bool (*pFunc)(const char*, size_t));
 
@@ -114,6 +117,8 @@ protected:
 
 	std::vector<std::string> m_skinNames;
 	size_t m_nSkinIndex = 0;
+
+	std::vector<std::string> m_slotNames;
 
 	void clearDrawables();
 	bool setupDrawer();

@@ -81,7 +81,7 @@ void CSpinePlayer::update(float fDelta)
 	}
 }
 /*速度・尺度・視点初期化*/
-void CSpinePlayer::ResetScale()
+void CSpinePlayer::resetScale()
 {
 	m_fTimeScale = 1.0f;
 
@@ -300,22 +300,24 @@ void CSpinePlayer::getCurrentAnimationTime(float* fTrack, float* fLast, float* f
 		}
 	}
 }
-/*槽溝名称引き渡し*/
-std::vector<std::string> CSpinePlayer::getSlotNames()
+
+float CSpinePlayer::getAnimationDuration(const char* animationName)
 {
-	std::vector<std::string> slotNames;
-	for (const auto& skeletonDatum : m_skeletonData)
+	for (const auto& pDrawable : m_drawables)
 	{
-		auto& slots = skeletonDatum->getSlots();
-		for (size_t ii = 0; ii < slots.size(); ++ii)
+		spine::Animation* pAnimation = pDrawable->skeleton()->getData()->findAnimation(animationName);
+		if (pAnimation != nullptr)
 		{
-			const char* szName = slots[ii]->getName().buffer();
-			const auto iter = std::find(slotNames.begin(), slotNames.end(), szName);
-			if (iter == slotNames.cend())slotNames.push_back(szName);
+			return pAnimation->getDuration();
 		}
 	}
 
-	return slotNames;
+	return 0.f;
+}
+/*槽溝名称引き渡し*/
+const std::vector<std::string>& CSpinePlayer::getSlotNames() const
+{
+	return m_slotNames;
 }
 /*装い名称引き渡し*/
 const std::vector<std::string>& CSpinePlayer::getSkinNames() const
@@ -367,8 +369,8 @@ void CSpinePlayer::mixSkins(const std::vector<std::string>& skinNames)
 		pDrawble->skeleton()->setSlotsToSetupPose();
 	}
 }
-/*動作合成*/
-void CSpinePlayer::mixAnimations(const std::vector<std::string>& animationNames)
+/*動作予約*/
+void CSpinePlayer::addAnimationTracks(const std::vector<std::string>& animationNames, bool loop)
 {
 	clearAnimationTracks();
 
@@ -387,12 +389,35 @@ void CSpinePlayer::mixAnimations(const std::vector<std::string>& animationNames)
 				spine::Animation* animation = pDrawable->skeleton()->getData()->findAnimation(animationName.c_str());
 				if (animation != nullptr)
 				{
-					pDrawable->animationState()->addAnimation(iTrack, animation, false, 0.f);
+					pDrawable->animationState()->addAnimation(iTrack, animation, loop, 0.f);
 					++iTrack;
 				}
 			}
 		}
 	}
+}
+
+void CSpinePlayer::mixAnimations(const char* fadeOutAnimationName, const char* fadeInAnimationName, float mixTime)
+{
+	for (const auto& pDrawable : m_drawables)
+	{
+		spine::Animation* fadeOutAnimation = pDrawable->skeleton()->getData()->findAnimation(fadeOutAnimationName);
+		spine::Animation* fadeInAnimation = pDrawable->skeleton()->getData()->findAnimation(fadeInAnimationName);
+		if (fadeOutAnimation != nullptr && fadeInAnimation != nullptr)
+		{
+			const auto& animationStateData = pDrawable->animationState()->getData();
+			animationStateData->setMix(fadeOutAnimation, fadeInAnimation, mixTime);
+		}
+	}
+}
+void CSpinePlayer::clearMixedAnimation()
+{
+#ifdef SPINE_4_1_OR_LATER
+	for (const auto& pDrawable : m_drawables)
+	{
+		pDrawable->animationState()->getData()->clear();
+	}
+#endif
 }
 /*描画除外是否関数登録*/
 void CSpinePlayer::setSlotExclusionCallback(bool(*pFunc)(const char*, size_t))
@@ -414,7 +439,7 @@ void CSpinePlayer::setBaseSize(float fWidth, float fHeight)
 	workOutDefaultScale();
 	m_fDefaultOffset = m_fOffset;
 
-	ResetScale();
+	resetScale();
 }
 
 void CSpinePlayer::resetBaseSize()
@@ -431,7 +456,7 @@ void CSpinePlayer::resetBaseSize()
 	}
 
 	workOutDefaultOffset();
-	ResetScale();
+	resetScale();
 	restartAnimation();
 }
 
@@ -486,6 +511,8 @@ void CSpinePlayer::clearDrawables()
 
 	m_skinNames.clear();
 	m_nSkinIndex = 0;
+
+	m_slotNames.clear();
 }
 /*描画器設定*/
 bool CSpinePlayer::setupDrawer()
@@ -523,13 +550,20 @@ bool CSpinePlayer::setupDrawer()
 			if (iter == m_skinNames.cend())m_skinNames.push_back(szSkinName);
 		}
 
+		auto& slots = pSkeletonDatum->getSlots();
+		for (size_t ii = 0; ii < slots.size(); ++ii)
+		{
+			const char* szName = slots[ii]->getName().buffer();
+			const auto& iter = std::find(m_slotNames.begin(), m_slotNames.end(), szName);
+			if (iter == m_slotNames.cend())m_slotNames.push_back(szName);
+		}
 	}
 
 	workOutDefaultOffset();
 
 	restartAnimation();
 
-	ResetScale();
+	resetScale();
 
 	return m_animationNames.size() > 0;
 }
