@@ -51,10 +51,11 @@ bool CSdlMainWindow::setSpineFromFile(const std::vector<std::string>& atlasFileP
 			/* Filename including extension. */
 			size_t nPos = atlasFilePaths[0].find_last_of("\\/");
 			if (nPos == std::string::npos)nPos = 0;
+			else ++nPos;
 			::SDL_SetWindowTitle(m_window.get(), &atlasFilePaths[0][nPos]);
 
 			setSpinePlayerSize();
-			m_sdlSpinePlayer->setSlotsToExclude({ "frame", "Frame", "AA", reinterpret_cast<const char*>(u8"出血") });
+			m_sdlSpinePlayer->setSlotsToExclude({ "frame", "Frame", "AA", reinterpret_cast<const char*>(u8"出血"), "sdvsdv", reinterpret_cast<const char*>(u8"出血框_註解")});
 
 			return true;
 		}
@@ -73,11 +74,12 @@ void CSdlMainWindow::setSlotExclusionCallback(bool(*pFunc)(const char*, size_t))
 
 bool CSdlMainWindow::setFont(const char* fontFilePath, bool bold, bool italic)
 {
-	m_fillFont.reset(::TTF_OpenFont(fontFilePath, EFontSize::kFillSize));
+	float dpi = ::SDL_GetWindowDisplayScale(m_window.get());
+	m_fillFont.reset(::TTF_OpenFont(fontFilePath, EFontSize::kFillSize * dpi));
 
 	if (m_fillFont == nullptr)return false;
 
-	m_outlineFont.reset(::TTF_OpenFont(fontFilePath, EFontSize::kFillSize));
+	m_outlineFont.reset(::TTF_OpenFont(fontFilePath, EFontSize::kFillSize * dpi));
 
 	::TTF_SetFontStyle(m_fillFont.get(), (bold ? TTF_STYLE_BOLD : 0) | (italic ? TTF_STYLE_ITALIC : 0));
 	::TTF_SetFontStyle(m_outlineFont.get(), (bold ? TTF_STYLE_BOLD : 0) | (italic ? TTF_STYLE_ITALIC : 0));
@@ -144,13 +146,13 @@ int CSdlMainWindow::display()
 				switch (event.key.scancode)
 				{
 				case SDL_SCANCODE_A:
-					if (m_sdlSpinePlayer.get() != nullptr)
+					if (m_sdlSpinePlayer != nullptr)
 					{
 						m_sdlSpinePlayer->togglePma();
 					}
 					break;
 				case SDL_SCANCODE_B:
-					if (m_sdlSpinePlayer.get() != nullptr)
+					if (m_sdlSpinePlayer != nullptr)
 					{
 						m_sdlSpinePlayer->toggleBlendMode();
 					}
@@ -211,7 +213,7 @@ int CSdlMainWindow::display()
 						int iX = static_cast<int>(mouseStartPos.x - mouseEndPos.x);
 						int iY = static_cast<int>(mouseStartPos.y - mouseEndPos.y);
 
-						if (m_sdlSpinePlayer.get() != nullptr)
+						if (m_sdlSpinePlayer != nullptr)
 						{
 							if (iX == 0 && iY == 0 && m_animationNames.empty())
 							{
@@ -252,7 +254,7 @@ int CSdlMainWindow::display()
 				Uint32 uiButtonState = ::SDL_GetMouseState(nullptr, nullptr);
 				if (uiButtonState & SDL_BUTTON_MASK(SDL_BUTTON_LEFT))
 				{
-					if (m_sdlSpinePlayer.get() != nullptr)
+					if (m_sdlSpinePlayer != nullptr)
 					{
 						constexpr float kTimeScaleDelta = 0.05f;
 
@@ -269,7 +271,7 @@ int CSdlMainWindow::display()
 				}
 				else
 				{
-					if (m_sdlSpinePlayer.get() != nullptr)
+					if (m_sdlSpinePlayer != nullptr)
 					{
 						static constexpr float kMinScale = 0.15f;
 
@@ -408,7 +410,7 @@ bool CSdlMainWindow::saveCurrentFrameImage()
 			::SDL_RenderReadPixels(m_renderer.get(), nullptr),
 			::SDL_DestroySurface
 		);
-	if (pSurface.get() == nullptr)return false;
+	if (pSurface == nullptr)return false;
 
 	::SDL_SetRenderTarget(m_renderer.get(), nullptr);
 
@@ -417,10 +419,24 @@ bool CSdlMainWindow::saveCurrentFrameImage()
 
 void CSdlMainWindow::resetSpinePlayerScale()
 {
-	if (m_sdlSpinePlayer.get() != nullptr)
+	if (m_sdlSpinePlayer != nullptr)
 	{
-		m_sdlSpinePlayer->ResetScale();
-		m_sdlSpinePlayer->setCanvasScale(m_sdlSpinePlayer->getSkeletonScale() * 0.9f);
+		m_sdlSpinePlayer->resetScale();
+
+		SDL_FPoint fBaseSize = m_sdlSpinePlayer->getBaseSize();
+
+		SDL_DisplayID displayId = ::SDL_GetDisplayForWindow(m_window.get());
+		if (displayId == 0)return;
+
+		const SDL_DisplayMode* pDisplayMode = ::SDL_GetCurrentDisplayMode(displayId);
+		if (pDisplayMode == nullptr)return;
+
+		float fScaleX = pDisplayMode->w / fBaseSize.x;
+		float fScaleY = pDisplayMode->h / fBaseSize.y;
+
+		float fScale = fScaleX > fScaleY ? fScaleX : fScaleY;
+		m_sdlSpinePlayer->setSkeletonScale(fScale / 0.945f);
+		m_sdlSpinePlayer->setCanvasScale(fScale);
 
 		resizeWindow();
 	}
@@ -436,7 +452,7 @@ void CSdlMainWindow::setSpinePlayerSize()
 		* This applies in most cases, but not always.
 		*/
 
-		m_sdlSpinePlayer->setOffset(0, 0);
+		m_sdlSpinePlayer->setOffset(96, 24);
 		/* 16: 9 */
 		m_sdlSpinePlayer->setBaseSize(4096.f, 2304.f);
 	}
@@ -533,7 +549,7 @@ void CSdlMainWindow::renderText(const std::string& str, int iPosX, int iPosY)
 			::SDL_DestroySurface
 		);
 
-	if (pFillSurface.get() == nullptr || pOutlineSurface.get() == nullptr)return;
+	if (pFillSurface == nullptr || pOutlineSurface == nullptr)return;
 
 	auto pFilledTexture = std::unique_ptr<SDL_Texture, decltype (&::SDL_DestroyTexture)>
 		(
@@ -547,11 +563,11 @@ void CSdlMainWindow::renderText(const std::string& str, int iPosX, int iPosY)
 			::SDL_DestroyTexture
 		);
 
-	if (pFilledTexture.get() == nullptr || pOutlinedTexture.get() == nullptr)return;
+	if (pFilledTexture == nullptr || pOutlinedTexture == nullptr)return;
 
 	SDL_FRect textRect{
-		static_cast<float>(iPosX + EFontSize::kOutLineSize),
-		static_cast<float>(iPosY + EFontSize::kOutLineSize),
+		static_cast<float>(iPosX),
+		static_cast<float>(iPosY),
 		static_cast<float>(pOutlineSurface->w),
 		static_cast<float>(pOutlineSurface->h)
 	};
