@@ -13,7 +13,7 @@ namespace alliance_sage
 		std::string strValue;
 	};
 
-	static std::wstring DeriveBasePathFromScriptFilePath(const std::wstring wstrFilePath)
+	static std::wstring DeriveBasePathFromScriptFilePath(const std::wstring& wstrFilePath)
 	{
 		size_t nPos = wstrFilePath.find(L"event_ja");
 		if (nPos == std::wstring::npos)return std::wstring();

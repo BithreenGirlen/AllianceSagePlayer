@@ -1,6 +1,4 @@
 ﻿
-#include <locale.h>
-
 #include <winsdkver.h>
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN 
@@ -50,8 +48,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_ LPWSTR    lpCmdLine,
 	_In_ int       nCmdShow)
 {
-	::setlocale(LC_ALL, ".utf8");
-
 	SSdlInit sdlInit;
 	if (!sdlInit.isInitialised)return 0;
 
