@@ -1,0 +1,27 @@
+﻿#ifndef SDL_SPINE_PLAYER_H_
+#define SDL_SPINE_PLAYER_H_
+
+#include "spine_player.h"
+
+class CSdlSpinePlayer : public CSpinePlayer
+{
+public:
+	CSdlSpinePlayer(SDL_Window* pSdlWindow, SDL_Renderer* pSdlRenderer);
+	virtual ~CSdlSpinePlayer();
+
+	void redraw();
+
+	SDL_FRect getCurrentBoundingOfSlot(const char* slotName, size_t nameLength) const;
+	template<size_t nameSize>
+	SDL_FRect getCurrentBoundingOfSlot(const char (&slotName)[nameSize]) const
+	{
+		return getCurrentBoundingOfSlot(slotName, nameSize - 1);
+	}
+private:
+	void workOutDefaultScale() override;
+	void workOutDefaultOffset() override;
+
+	SDL_Window *m_pSdlWindow = nullptr;
+	SDL_Renderer* m_pSdlRenderer = nullptr;
+};
+#endif // !SDL_SPINE_PLAYER_H_
