@@ -34,7 +34,7 @@ public:
 
 	int display();
 private:
-	enum EFontSize { kOutLineSize = 1, kFillSize = 32 };
+	enum EFontSize { kOutLineSize = 4, kFillSize = 32 };
 	static constexpr float kScaleDelta = 0.01f;
 
 	std::unique_ptr<SDL_Window, decltype(&::SDL_DestroyWindow)> m_window{ nullptr, ::SDL_DestroyWindow};
@@ -53,7 +53,9 @@ private:
 	void setSpinePlayerSize();
 
 	std::unique_ptr<TTF_Font, decltype(&::TTF_CloseFont)> m_fillFont { nullptr, ::TTF_CloseFont };
-	std::unique_ptr<TTF_Font, decltype(&::TTF_CloseFont)> m_outlineFont{ nullptr, ::TTF_CloseFont };
+	std::unique_ptr<TTF_Font, decltype(&::TTF_CloseFont)> m_outlineFont{ nullptr, ::TTF_CloseFont };;
+	std::unique_ptr<SDL_Texture, decltype (&::SDL_DestroyTexture)> m_fillTexture{ nullptr, ::SDL_DestroyTexture };
+	std::unique_ptr<SDL_Texture, decltype (&::SDL_DestroyTexture)> m_outlineTexture{ nullptr, ::SDL_DestroyTexture };
 	bool m_isTextColourReversed = false;
 	bool m_isTextHidden = false;
 
@@ -66,15 +68,17 @@ private:
 	std::unique_ptr<CMfMediaPlayer> m_pBgPlayer;
 	CMfMediaPlayer m_voicePlayer;
 	CSdlClock m_textClock;
+	std::string m_messageText;
 
 	void shiftMessageText(bool forward);
 	void updateMessageText();
-	std::string formatMessageText();
+	void prepareMessageText();
+	void formatMessageText();
 
 	void toggleTextColour();
 	void toggleTextVisibility();
 
-	void renderText(const std::string& str, int iPosX = 0, int iPosY = 0);
+	void renderText(int iPosX = 0, int iPosY = 0);
 
 	void checkTimer();
 };

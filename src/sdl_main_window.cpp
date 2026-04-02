@@ -106,11 +106,13 @@ int CSdlMainWindow::display()
 	m_pBgPlayer->SetLoop(true);
 	m_pBgPlayer->SetCurrentVolume(0.1);
 
+	updateMessageText();
+
 	int iRet = 0;
 	bool toBeQuit = false;
 	bool isUnderWindowMove = false;
 	bool wasLeftPressed = false;
-	bool wasLeftCombinated = false;
+	bool wasLeftCombined = false;
 
 	SDL_FPoint mouseStartPos{};
 
@@ -192,9 +194,9 @@ int CSdlMainWindow::display()
 				if (event.button.button == SDL_BUTTON_LEFT)
 				{
 					{
-						if (wasLeftCombinated)
+						if (wasLeftCombined)
 						{
-							wasLeftCombinated = false;
+							wasLeftCombined = false;
 							wasLeftPressed = false;
 							break;
 						}
@@ -243,7 +245,7 @@ int CSdlMainWindow::display()
 
 						mouseStartPos = mousePos;
 
-						wasLeftCombinated = true;
+						wasLeftCombined = true;
 					}
 				}
 			}
@@ -262,7 +264,7 @@ int CSdlMainWindow::display()
 						if (timeScale < 0.f)timeScale = 0.f;
 						m_sdlSpinePlayer->setTimeScale(timeScale);
 
-						wasLeftCombinated = true;
+						wasLeftCombined = true;
 					}
 				}
 				else if (uiButtonState & SDL_BUTTON_MASK(SDL_BUTTON_RIGHT))
@@ -313,8 +315,10 @@ int CSdlMainWindow::display()
 
 			::SDL_RenderTexture(m_renderer.get(), m_spineTexture.get(), nullptr, nullptr);
 		}
-
-		renderText(formatMessageText());
+		if (!m_isTextHidden)
+		{
+			renderText();
+		}
 
 		::SDL_RenderPresent(m_renderer.get());
 
@@ -503,76 +507,78 @@ void CSdlMainWindow::updateMessageText()
 			m_voicePlayer.Play(wstrVoicePath.c_str());
 		}
 	}
+
+	prepareMessageText();
 	m_textClock.restart();
 }
-/*表示文章作成*/
-std::string CSdlMainWindow::formatMessageText()
+/* 描画文字列作成 */
+void CSdlMainWindow::prepareMessageText()
 {
-	if (m_nTextIndex >= m_textData.size())return {};
-
-	const adv::TextDatum& textDatum = m_textData[m_nTextIndex];
-	std::string str = textDatum.strText;
-	if (!str.empty() && str.back() != '\n')str += '\n';
-
-	/* size_t is 20 digits at most. */
-	char sBuffer[64]{};
-	::SDL_snprintf(sBuffer, sizeof(sBuffer) - 1, "%zu/%zu", m_nTextIndex + 1, m_textData.size());
-	str += sBuffer;
-	return str;
-}
-/*文字色切り替え*/
-void CSdlMainWindow::toggleTextColour()
-{
-	m_isTextColourReversed ^= true;
-}
-void CSdlMainWindow::toggleTextVisibility()
-{
-	m_isTextHidden ^= true;
-}
-/*文章描き出し*/
-void CSdlMainWindow::renderText(const std::string& str, int iPosX, int iPosY)
-{
-	if (m_fillFont == nullptr || m_outlineFont == nullptr)return;
+	formatMessageText();
 
 	const SDL_Color kWhite = SDL_Color{ 0xff, 0xff, 0xff, 0xff };
 	const SDL_Color kBlack = SDL_Color{ 0x00, 0x00, 0x00, 0xff };
 
 	auto pFillSurface = std::unique_ptr<SDL_Surface, decltype (&::SDL_DestroySurface)>
 		(
-			::TTF_RenderText_Blended_Wrapped(m_fillFont.get(), str.data(), str.size(), m_isTextColourReversed ? kWhite : kBlack, 0),
+			::TTF_RenderText_Blended_Wrapped(m_fillFont.get(), m_messageText.data(), m_messageText.size(), m_isTextColourReversed ? kWhite : kBlack, 0),
 			::SDL_DestroySurface
 		);
 
 	auto pOutlineSurface = std::unique_ptr<SDL_Surface, decltype (&::SDL_DestroySurface)>
 		(
-			::TTF_RenderText_Blended_Wrapped(m_outlineFont.get(), str.data(), str.size(), m_isTextColourReversed ? kBlack : kWhite, 0),
+			::TTF_RenderText_Blended_Wrapped(m_outlineFont.get(), m_messageText.data(), m_messageText.size(), m_isTextColourReversed ? kBlack : kWhite, 0),
 			::SDL_DestroySurface
 		);
 
 	if (pFillSurface == nullptr || pOutlineSurface == nullptr)return;
 
-	auto pFilledTexture = std::unique_ptr<SDL_Texture, decltype (&::SDL_DestroyTexture)>
-		(
-			::SDL_CreateTextureFromSurface(m_renderer.get(), pFillSurface.get()),
-			::SDL_DestroyTexture
-		);
+	m_fillTexture.reset(::SDL_CreateTextureFromSurface(m_renderer.get(), pFillSurface.get()));
+	m_outlineTexture.reset(::SDL_CreateTextureFromSurface(m_renderer.get(), pOutlineSurface.get()));
+}
+/*表示文章作成*/
+void CSdlMainWindow::formatMessageText()
+{
+	if (m_nTextIndex >= m_textData.size())return;
 
-	auto pOutlinedTexture = std::unique_ptr<SDL_Texture, decltype (&::SDL_DestroyTexture)>
-		(
-			::SDL_CreateTextureFromSurface(m_renderer.get(), pOutlineSurface.get()),
-			::SDL_DestroyTexture
-		);
+	const adv::TextDatum& textDatum = m_textData[m_nTextIndex];
+	m_messageText.assign(textDatum.strText);
+	if (!m_messageText.empty() && m_messageText.back() != '\n')m_messageText += '\n';
 
-	if (pFilledTexture == nullptr || pOutlinedTexture == nullptr)return;
+	/* size_t is 20 digits at most. */
+	char sBuffer[64]{};
+	::SDL_snprintf(sBuffer, sizeof(sBuffer) - 1, "%zu/%zu", m_nTextIndex + 1, m_textData.size());
+	m_messageText += sBuffer;
+}
+/*文字色切り替え*/
+void CSdlMainWindow::toggleTextColour()
+{
+	m_isTextColourReversed ^= true;
+	prepareMessageText();
+}
+void CSdlMainWindow::toggleTextVisibility()
+{
+	m_isTextHidden ^= true;
+}
+/*文章描画*/
+void CSdlMainWindow::renderText(int iPosX, int iPosY)
+{
+	if (m_fillTexture == nullptr || m_outlineTexture == nullptr)return;
 
-	SDL_FRect textRect{
-		static_cast<float>(iPosX),
-		static_cast<float>(iPosY),
-		static_cast<float>(pOutlineSurface->w),
-		static_cast<float>(pOutlineSurface->h)
-	};
-	::SDL_RenderTexture(m_renderer.get(), pOutlinedTexture.get(), nullptr, &textRect);
-	::SDL_RenderTexture(m_renderer.get(), pFilledTexture.get(), nullptr, &textRect);
+	SDL_FRect outlineRect{};
+	::SDL_GetTextureSize(m_outlineTexture.get(), &outlineRect.w, &outlineRect.h);
+	outlineRect.x = static_cast<float>(iPosX);
+	outlineRect.y = static_cast<float>(iPosY);
+
+	SDL_FRect fillRect{};
+	::SDL_GetTextureSize(m_fillTexture.get(), &fillRect.w, &fillRect.h);
+	float thickness = (outlineRect.w - fillRect.w) / 2.f;
+
+	fillRect.x += thickness;
+	fillRect.y += thickness;
+
+	::SDL_RenderTexture(m_renderer.get(), m_outlineTexture.get(), nullptr, &outlineRect);
+	::SDL_RenderTexture(m_renderer.get(), m_fillTexture.get(), nullptr, &fillRect);
 }
 
 void CSdlMainWindow::checkTimer()
